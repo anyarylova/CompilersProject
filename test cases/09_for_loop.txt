@@ -1,0 +1,4 @@
+var x: integer is 5;
+for i in [1 .. 6] loop
+  x := x + i;
+end

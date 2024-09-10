@@ -1,0 +1,6 @@
+var x: integer is 2;
+if (x > 3) then
+  x := 10;
+else
+  x := 20;
+end
