@@ -1,9 +1,8 @@
- /* JFlex definition for the custom language */
+/* JFlex definition for the custom language */
 %%
 %public
 %class Lexer
 %unicode
-%cup
 
 %{
   /* User code section for imports, variable declarations, etc. */
@@ -57,6 +56,10 @@ COMMENT     = "//" [^\n]*
 ">"          { return sym(GREATER_THAN); }
 "<"          { return sym(LESS_THAN); }
 "and"        { return sym(AND); }
+"or"         { return sym(OR); }
+"xor"        { return sym(XOR); }
+"not"        { return sym(NOT); }
+
 
 /* Delimiters */
 "("          { return sym(LPAREN); }
