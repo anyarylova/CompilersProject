@@ -1,4 +1,4 @@
-## Compiler of Imperative Language
+## Compiler for Imperative Language
 
 #### Technological Stack
 
