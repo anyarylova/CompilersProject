@@ -1,0 +1,2 @@
+var x: boolean is false;
+x := 1 // Should assign true

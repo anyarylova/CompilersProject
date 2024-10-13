@@ -1,0 +1,6 @@
+var x: integer is 5;
+if (x > 0) then
+  if (x < 10) then
+    x := 15;
+  end
+end

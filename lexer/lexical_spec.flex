@@ -1,9 +1,9 @@
- /* JFlex definition for the custom language */
+/* JFlex definition for the custom language */
 %%
 %public
 %class Lexer
 %unicode
-%cup
+%type String
 
 %{
   /* User code section for imports, variable declarations, etc. */
@@ -20,6 +20,7 @@ COMMENT     = "//" [^\n]*
 
 /* Regular expression rules */
 %%
+
 /* Skip whitespaces */
 {WHITESPACE} { /* Ignore whitespaces */ }
 
@@ -27,48 +28,55 @@ COMMENT     = "//" [^\n]*
 {COMMENT}    { /* Ignore comments */ }
 
 /* Keywords */
-"var"        { return sym(VAR); }
-"integer"    { return sym(INTEGER_TYPE); }
-"boolean"    { return sym(BOOLEAN_TYPE); }
-"real"       { return sym(REAL_TYPE); }
-"array"      { return sym(ARRAY); }
-"record"     { return sym(RECORD); }
-"true"       { return sym(TRUE); }
-"false"      { return sym(FALSE); }
-"is"         { return sym(IS); }
-"if"         { return sym(IF); }
-"then"       { return sym(THEN); }
-"else"       { return sym(ELSE); }
-"end"        { return sym(END); }
-"for"        { return sym(FOR); }
-"in"         { return sym(IN); }
-"loop"       { return sym(LOOP); }
-"while"      { return sym(WHILE); }
-"routine"    { return sym(ROUTINE); }
-"return"     { return sym(RETURN); }
+"var"        { return "VAR"; }
+"integer"    { return "INTEGER_TYPE"; }
+"boolean"    { return "BOOLEAN_TYPE"; }
+"real"       { return "REAL_TYPE"; }
+"array"      { return "ARRAY"; }
+"record"     { return "RECORD"; }
+"true"       { return "TRUE"; }
+"false"      { return "FALSE"; }
+"is"         { return "IS"; }
+"if"         { return "IF"; }
+"then"       { return "THEN"; }
+"else"       { return "ELSE"; }
+"end"        { return "END"; }
+"for"        { return "FOR"; }
+"in"         { return "IN"; }
+"loop"       { return "LOOP"; }
+"while"      { return "WHILE"; }
+"routine"    { return "ROUTINE"; }
+"return"     { return "RETURN"; }
 
 /* Operators */
-"+"          { return sym(PLUS); }
-"-"          { return sym(MINUS); }
-"*"          { return sym(MULTIPLY); }
-"/"          { return sym(DIVIDE); }
-":="         { return sym(ASSIGN); }
-"="          { return sym(EQUAL); }
-">"          { return sym(GREATER_THAN); }
-"<"          { return sym(LESS_THAN); }
-"and"        { return sym(AND); }
+"+"          { return "PLUS"; }
+"-"          { return "MINUS"; }
+"*"          { return "MULTIPLY"; }
+"/"          { return "DIVIDE"; }
+":="         { return "ASSIGN"; }
+"="          { return "EQUAL"; }
+">"          { return "GREATER_THAN"; }
+"<"          { return "LESS_THAN"; }
+"and"        { return "AND"; }
+"or"         { return "OR"; }
+"xor"        { return "XOR"; }
+"not"        { return "NOT"; }
+
 
 /* Delimiters */
-"("          { return sym(LPAREN); }
-")"          { return sym(RPAREN); }
-"["          { return sym(LBRACKET); }
-"]"          { return sym(RBRACKET); }
-","          { return sym(COMMA); }
-"."          { return sym(DOT); }
+"("          { return "LPAREN"; }
+")"          { return "RPAREN"; }
+"["          { return "LBRACKET"; }
+"]"          { return "RBRACKET"; }
+","          { return "COMMA"; }
+"."          { return "DOT"; }
+".."         { return "RANGE"; }
+":"          { return "COLON"; }
+";"          { return "SEMICOLON"; }
 
 /* Identifiers */
-{IDENTIFIER} { return sym(IDENTIFIER, yytext()); }
+{IDENTIFIER} { return "IDENTIFIER, yytext()"; }
 
 /* Numbers */
-{NUMBER}     { return sym(NUMBER, Integer.parseInt(yytext())); }
-{REAL}       { return sym(REAL, Double.parseDouble(yytext())); }
+{NUMBER}     { return "NUMBER, Integer.parseInt(yytext())"; }
+{REAL}       { return "REAL, Double.parseDouble(yytext())"; }
