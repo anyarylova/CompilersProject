@@ -3,7 +3,7 @@
 #### Technological Stack
 
 - Target platform: JVM
-- Implementation language/tool : Java, bison-based parser
+- Implementation language/tool : Java, JavaCup-based parser
 - Lexer: Jflex
 - Target language: Jasmin assembler
 
