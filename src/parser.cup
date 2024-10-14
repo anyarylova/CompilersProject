@@ -16,6 +16,11 @@ non terminal Statement;
 non terminal Expression;
 non terminal Type;
 non terminal Function;
+non terminal ProgramElements;
+non terminal ProgramElement;
+non terminal StatementBlock;
+non terminal SimpleStatement;
+non terminal CompoundStatement;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -25,9 +30,14 @@ precedence left MULTIPLY, DIVIDE;
 precedence right NOT;
 
 /* Grammar rules */
-Program ::= Declaration SEMICOLON
-          | Statement SEMICOLON
-          | Function SEMICOLON;
+Program ::= ProgramElements;
+
+ProgramElements ::= ProgramElements ProgramElement
+                  | ProgramElement;
+
+ProgramElement ::= Declaration SEMICOLON
+                 | Statement
+                 | Function;
 
 Declaration ::= VAR IDENTIFIER:id COLON Type IS Expression
               {: System.out.println("Variable declaration: " + id); :};
@@ -40,15 +50,22 @@ Type ::= INTEGER_TYPE
        | RECORD Declaration END
          {: System.out.println("Record type"); :};
 
-Statement ::= IDENTIFIER ASSIGN Expression
-            | IF Expression THEN Statement ELSE Statement END
-              {: System.out.println("If-else statement"); :}
-            | WHILE Expression LOOP Statement END
-              {: System.out.println("While loop"); :}
-            | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END
-              {: System.out.println("For loop"); :}
-            | RETURN Expression
-              {: System.out.println("Return statement"); :};
+StatementBlock ::= Statement
+                 | StatementBlock Statement;
+
+Statement ::= SimpleStatement SEMICOLON
+            | CompoundStatement;
+
+SimpleStatement ::= IDENTIFIER ASSIGN Expression
+                  | RETURN Expression
+                    {: System.out.println("Return statement"); :};
+
+CompoundStatement ::= IF LPAREN Expression RPAREN THEN StatementBlock ELSE StatementBlock END
+                      {: System.out.println("If-else statement"); :}
+                    | WHILE LPAREN Expression RPAREN LOOP StatementBlock END
+                      {: System.out.println("While loop"); :}
+                    | FOR IDENTIFIER IN LBRACKET Expression RANGE Expression RBRACKET LOOP StatementBlock END
+                      {: System.out.println("For loop"); :};
 
 Expression ::= Expression PLUS Expression
              | Expression MINUS Expression
@@ -65,5 +82,5 @@ Expression ::= Expression PLUS Expression
              | IDENTIFIER
              | LPAREN Expression RPAREN;
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration SEMICOLON Statement END
+Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration SEMICOLON StatementBlock END
             {: System.out.println("Function definition: " + id); :};
