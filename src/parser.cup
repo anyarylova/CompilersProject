@@ -21,8 +21,9 @@ non terminal ProgramElement;
 non terminal StatementBlock;
 non terminal SimpleStatement;
 non terminal CompoundStatement;
+non terminal Variable;
+non terminal ExpressionList;
 
-/* Define precedences */
 precedence left OR, AND, XOR;
 precedence left EQUAL, LESS_THAN, GREATER_THAN;
 precedence left PLUS, MINUS;
@@ -56,9 +57,12 @@ StatementBlock ::= Statement
 Statement ::= SimpleStatement SEMICOLON
             | CompoundStatement;
 
-SimpleStatement ::= IDENTIFIER ASSIGN Expression
+SimpleStatement ::= Variable ASSIGN Expression
                   | RETURN Expression
                     {: System.out.println("Return statement"); :};
+
+Variable ::= IDENTIFIER
+           | Variable LBRACKET Expression RBRACKET;
 
 CompoundStatement ::= IF LPAREN Expression RPAREN THEN StatementBlock ELSE StatementBlock END
                       {: System.out.println("If-else statement"); :}
@@ -79,8 +83,14 @@ Expression ::= Expression PLUS Expression
              | FALSE
              | NUMBER
              | REAL
-             | IDENTIFIER
-             | LPAREN Expression RPAREN;
+             | Variable
+             | LPAREN Expression RPAREN
+             | LBRACKET ExpressionList RBRACKET
+             ;
+
+ExpressionList ::= Expression
+                 | ExpressionList COMMA Expression
+                 ;
 
 Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration SEMICOLON StatementBlock END
             {: System.out.println("Function definition: " + id); :};
