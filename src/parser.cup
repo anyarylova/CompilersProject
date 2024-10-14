@@ -1,0 +1,69 @@
+/* parser.cup - Grammar specification for the custom language */
+import java_cup.runtime.*;
+
+terminal VAR, INTEGER_TYPE, BOOLEAN_TYPE, REAL_TYPE, ARRAY, RECORD, TRUE, FALSE, IS;
+terminal IF, THEN, ELSE, END, FOR, IN, LOOP, WHILE, ROUTINE, RETURN;
+terminal PLUS, MINUS, MULTIPLY, DIVIDE, ASSIGN, EQUAL, GREATER_THAN, LESS_THAN;
+terminal AND, OR, XOR, NOT;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON;
+terminal String IDENTIFIER;
+terminal Integer NUMBER;
+terminal Double REAL;
+
+non terminal Program;
+non terminal Declaration;
+non terminal Statement;
+non terminal Expression;
+non terminal Type;
+non terminal Function;
+
+/* Define precedences */
+precedence left OR, AND, XOR;
+precedence left EQUAL, LESS_THAN, GREATER_THAN;
+precedence left PLUS, MINUS;
+precedence left MULTIPLY, DIVIDE;
+precedence right NOT;
+
+/* Grammar rules */
+Program ::= Declaration SEMICOLON
+          | Statement SEMICOLON
+          | Function SEMICOLON;
+
+Declaration ::= VAR IDENTIFIER:id COLON Type IS Expression
+              {: System.out.println("Variable declaration: " + id); :};
+
+Type ::= INTEGER_TYPE
+       | BOOLEAN_TYPE
+       | REAL_TYPE
+       | ARRAY LBRACKET NUMBER RBRACKET Type
+         {: System.out.println("Array type"); :}
+       | RECORD Declaration END
+         {: System.out.println("Record type"); :};
+
+Statement ::= IDENTIFIER ASSIGN Expression
+            | IF Expression THEN Statement ELSE Statement END
+              {: System.out.println("If-else statement"); :}
+            | WHILE Expression LOOP Statement END
+              {: System.out.println("While loop"); :}
+            | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END
+              {: System.out.println("For loop"); :}
+            | RETURN Expression
+              {: System.out.println("Return statement"); :};
+
+Expression ::= Expression PLUS Expression
+             | Expression MINUS Expression
+             | Expression MULTIPLY Expression
+             | Expression DIVIDE Expression
+             | Expression EQUAL Expression
+             | Expression GREATER_THAN Expression
+             | Expression LESS_THAN Expression
+             | NOT Expression
+             | TRUE
+             | FALSE
+             | NUMBER
+             | REAL
+             | IDENTIFIER
+             | LPAREN Expression RPAREN;
+
+Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration SEMICOLON Statement END
+            {: System.out.println("Function definition: " + id); :};
