@@ -1,112 +1,186 @@
-
-
 import java.util.List;
 
+abstract class ASTNode {
+    ASTNode parent;
 
-abstract class ASTNode {}
+    public ASTNode getParent() {
+        return parent;
+    }
 
-// Program node: The root node containing a list of children
+    public void setParent(ASTNode parent) {
+        this.parent = parent;
+    }
+}
+
 class ProgramNode extends ASTNode {
-    List<ASTNode> children;
+    private List<ASTNode> children;
 
     public ProgramNode(List<ASTNode> children) {
         this.children = children;
     }
+
+    public List<ASTNode> getChildren() {
+        return children;
+    }
 }
 
-// Declaration node: Represents variable declarations
 class DeclarationNode extends ASTNode {
-    String identifier;
-    TypeNode type;
-    ExpressionNode expr;
+    private String identifier;
+    private TypeNode type;
+    private ExpressionNode expr;
 
     public DeclarationNode(String identifier, TypeNode type, ExpressionNode expr) {
         this.identifier = identifier;
         this.type = type;
         this.expr = expr;
     }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public TypeNode getType() {
+        return type;
+    }
+
+    public ExpressionNode getExpression() {
+        return expr;
+    }
 }
 
-// Abstract class for all types of statements (assignments, if-else, loops, etc.)
 abstract class StatementNode extends ASTNode { }
-
-// Abstract class for all expressions (arithmetic, logical, values, etc.)
 abstract class ExpressionNode extends ASTNode { }
-
-// Abstract class for all types (integer, boolean, real, array, etc.)
 abstract class TypeNode extends ASTNode { }
 
-// Function node: Represents function/routine definitions
 class FunctionNode extends ASTNode {
-    String identifier;
-    DeclarationNode declaration;
-    StatementNode statement;
+    private String identifier;
+    private DeclarationNode declaration;
+    private StatementNode statement;
 
     public FunctionNode(String identifier, DeclarationNode declaration, StatementNode statement) {
         this.identifier = identifier;
         this.declaration = declaration;
         this.statement = statement;
     }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public DeclarationNode getDeclaration() {
+        return declaration;
+    }
+
+    public StatementNode getStatement() {
+        return statement;
+    }
 }
 
-// Integer type node
 class IntegerTypeNode extends TypeNode { }
-
-// Boolean type node
 class BooleanTypeNode extends TypeNode { }
-
-// Real type node
 class RealTypeNode extends TypeNode { }
 
-// Array type node: Represents arrays with a size and element type
 class ArrayTypeNode extends TypeNode {
-    int size;
-    TypeNode elementType;
+    private int size;
+    private TypeNode elementType;
 
     public ArrayTypeNode(int size, TypeNode elementType) {
         this.size = size;
         this.elementType = elementType;
     }
+
+    public int getSize() {
+        return size;
+    }
+
+    public TypeNode getElementType() {
+        return elementType;
+    }
 }
 
-// Record type node: Represents record types (like structs in C)
 class RecordTypeNode extends TypeNode {
-    List<DeclarationNode> fields;
+    private List<DeclarationNode> fields;
 
     public RecordTypeNode(List<DeclarationNode> fields) {
         this.fields = fields;
     }
+
+    public List<DeclarationNode> getFields() {
+        return fields;
+    }
 }
 
-// Binary operation node: Represents binary operations like addition, subtraction, etc.
 class BinaryOpNode extends ExpressionNode {
-    ExpressionNode left, right;
-    String operator;
+    private ExpressionNode left;
+    private ExpressionNode right;
+    private String operator;
 
     public BinaryOpNode(ExpressionNode left, ExpressionNode right, String operator) {
         this.left = left;
         this.right = right;
         this.operator = operator;
     }
+
+    public ExpressionNode getLeft() {
+        return left;
+    }
+
+    public void setLeft(ExpressionNode left) {
+        this.left = left;
+    }
+
+    public ExpressionNode getRight() {
+        return right;
+    }
+
+    public void setRight(ExpressionNode right) {
+        this.right = right;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
 }
 
-// Unary operation node: Represents unary operations like NOT, etc.
 class UnaryOpNode extends ExpressionNode {
-    ExpressionNode expr;
-    String operator;
+    private ExpressionNode expr;
+    private String operator;
 
     public UnaryOpNode(ExpressionNode expr, String operator) {
         this.expr = expr;
         this.operator = operator;
     }
+
+    public ExpressionNode getExpr() {
+        return expr;
+    }
+
+    public String getOperator() {
+        return operator;
+    }
 }
 
-// Number node: Represents an integer constant
+class IdentifierNode extends ExpressionNode {
+    private String name;
+
+    public IdentifierNode(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
 class NumberNode extends ExpressionNode {
-    int value;
+    private int value;
 
     public NumberNode(int value) {
         this.value = value;
+    }
+
+    public int getValue() {
+        return value;
     }
 }
 
@@ -119,15 +193,6 @@ class RealNode extends ExpressionNode {
     }
 }
 
-// Identifier node: Represents an identifier (e.g., a variable name)
-class IdentifierNode extends ExpressionNode {
-    String name;
-
-    public IdentifierNode(String name) {
-        this.name = name;
-    }
-}
-
 // Boolean node: Represents a boolean constant (true or false)
 class BooleanNode extends ExpressionNode {
     boolean value;
@@ -137,46 +202,83 @@ class BooleanNode extends ExpressionNode {
     }
 }
 
-// Assignment node: Represents assignment statements (e.g., x := expr)
-class AssignmentNode extends StatementNode {
-    IdentifierNode id;
-    ExpressionNode expr;
+class ReturnNode extends StatementNode {
+    private ExpressionNode expr;
 
-    public AssignmentNode(IdentifierNode id, ExpressionNode expr) {
-        this.id = id;
+    public ReturnNode(ExpressionNode expr) {
         this.expr = expr;
+    }
+
+    public ExpressionNode getExpr() {
+        return expr;
     }
 }
 
-// If-else node: Represents if-else statements
+class AssignmentNode extends StatementNode {
+    private IdentifierNode identifier;
+    private ExpressionNode expr;
+
+    public AssignmentNode(IdentifierNode identifier, ExpressionNode expr) {
+        this.identifier = identifier;
+        this.expr = expr;
+    }
+
+    public IdentifierNode getIdentifier() {
+        return identifier;
+    }
+
+    public ExpressionNode getExpression() {
+        return expr;
+    }
+}
+
 class IfElseNode extends StatementNode {
-    ExpressionNode condition;
-    StatementNode thenStmt;
-    StatementNode elseStmt;
+    private ExpressionNode condition;
+    private StatementNode thenStmt;
+    private StatementNode elseStmt;
 
     public IfElseNode(ExpressionNode condition, StatementNode thenStmt, StatementNode elseStmt) {
         this.condition = condition;
         this.thenStmt = thenStmt;
         this.elseStmt = elseStmt;
     }
+
+    public ExpressionNode getCondition() {
+        return condition;
+    }
+
+    public StatementNode getThenStmt() {
+        return thenStmt;
+    }
+
+    public StatementNode getElseStmt() {
+        return elseStmt;
+    }
 }
 
-// While loop node: Represents while-loop statements
 class WhileLoopNode extends StatementNode {
-    ExpressionNode condition;
-    StatementNode body;
+    private ExpressionNode condition;
+    private StatementNode body;
 
     public WhileLoopNode(ExpressionNode condition, StatementNode body) {
         this.condition = condition;
         this.body = body;
     }
+
+    public ExpressionNode getCondition() {
+        return condition;
+    }
+
+    public StatementNode getBody() {
+        return body;
+    }
 }
 
-// For loop node: Represents for-loop statements
 class ForLoopNode extends StatementNode {
-    IdentifierNode iterator;
-    ExpressionNode start, end;
-    StatementNode body;
+    private IdentifierNode iterator;
+    private ExpressionNode start;
+    private ExpressionNode end;
+    private StatementNode body;
 
     public ForLoopNode(IdentifierNode iterator, ExpressionNode start, ExpressionNode end, StatementNode body) {
         this.iterator = iterator;
@@ -184,13 +286,20 @@ class ForLoopNode extends StatementNode {
         this.end = end;
         this.body = body;
     }
-}
 
-// Return node: Represents return statements in functions
-class ReturnNode extends StatementNode {
-    ExpressionNode expr;
+    public IdentifierNode getIterator() {
+        return iterator;
+    }
 
-    public ReturnNode(ExpressionNode expr) {
-        this.expr = expr;
+    public ExpressionNode getStart() {
+        return start;
+    }
+
+    public ExpressionNode getEnd() {
+        return end;
+    }
+
+    public StatementNode getBody() {
+        return body;
     }
 }

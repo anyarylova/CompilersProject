@@ -9,8 +9,17 @@ public class Main {
       /* Parser instantiation */
       parser p = new parser(l);
       /* Start the parser */
-      Object result = p.parse();
       ProgramNode ast = (ProgramNode) p.parse().value;
+      if (ast != null) {
+        // Create the semantic analyzer
+        SemanticAnalyzer analyzer = new SemanticAnalyzer();
+
+        // Analyze the AST for semantic errors and optimizations
+        System.out.println("Running semantic analysis and optimizations...");
+        analyzer.analyze(ast);
+    } else {
+        System.out.println("Parsing failed: AST is null.");
+    }
     } catch (Exception e) {
       e.printStackTrace();
     }
