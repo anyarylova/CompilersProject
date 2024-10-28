@@ -1,5 +1,6 @@
 /* Es 1 - Ex 1 (Main) */
 import java.io.*;
+import ast.*;
    
 public class Main {
   static public void main(String argv[]) {    
@@ -9,7 +10,9 @@ public class Main {
       /* Parser instantiation */
       parser p = new parser(l);
       /* Start the parser */
-      Object result = p.parse();      
+      ASTNode ast = (ASTNode) p.parse().value;  
+      ASTVisitor printVisitor = new PrintVisitor();
+      ast.accept(printVisitor);
     } catch (Exception e) {
       e.printStackTrace();
     }
