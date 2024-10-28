@@ -1,4 +1,5 @@
 /* parser.cup - Grammar specification for the custom language */
+import java.util.*;  // for List
 import java_cup.runtime.*;
 
 terminal VAR, INTEGER_TYPE, BOOLEAN_TYPE, REAL_TYPE, ARRAY, RECORD, TRUE, FALSE, IS;
@@ -10,12 +11,12 @@ terminal String IDENTIFIER;
 terminal Integer NUMBER;
 terminal Double REAL;
 
-non terminal Program;
-non terminal Declaration;
-non terminal Statement;
-non terminal Expression;
-non terminal Type;
-non terminal Function;
+non terminal ProgramNode Program;
+non terminal DeclarationNode Declaration;
+non terminal StatementNode Statement;
+non terminal ExpressionNode Expression;
+non terminal TypeNode Type;
+non terminal FunctionNode Function;
 
 /* Define precedences */
 precedence left OR, AND, XOR;
@@ -25,45 +26,66 @@ precedence left MULTIPLY, DIVIDE;
 precedence right NOT;
 
 /* Grammar rules */
-Program ::= Declaration SEMICOLON
-          | Statement SEMICOLON
-          | Function SEMICOLON;
+Program ::= Declaration:d SEMICOLON
+          {: RESULT = new ProgramNode(Collections.singletonList(d)); :}
+          | Statement:s SEMICOLON
+          {: RESULT = new ProgramNode(Collections.singletonList(s)); :}
+          | Function:f SEMICOLON
+          {: RESULT = new ProgramNode(Collections.singletonList(f)); :};
 
-Declaration ::= VAR IDENTIFIER:id COLON Type IS Expression
-              {: System.out.println("Variable declaration: " + id); :};
+Declaration ::= VAR IDENTIFIER:id COLON Type:t IS Expression:e
+              {: RESULT = new DeclarationNode(id, t, e); :};
 
 Type ::= INTEGER_TYPE
+       {: RESULT = new IntegerTypeNode(); :}
        | BOOLEAN_TYPE
+       {: RESULT = new BooleanTypeNode(); :}
        | REAL_TYPE
-       | ARRAY LBRACKET NUMBER RBRACKET Type
-         {: System.out.println("Array type"); :}
-       | RECORD Declaration END
-         {: System.out.println("Record type"); :};
+       {: RESULT = new RealTypeNode(); :}
+       | ARRAY LBRACKET NUMBER:n RBRACKET Type:t
+         {: RESULT = new ArrayTypeNode(n, t); :}
+       | RECORD Declaration:d END
+         {: RESULT = new RecordTypeNode(Collections.singletonList(d)); :};
 
-Statement ::= IDENTIFIER ASSIGN Expression
-            | IF Expression THEN Statement ELSE Statement END
-              {: System.out.println("If-else statement"); :}
-            | WHILE Expression LOOP Statement END
-              {: System.out.println("While loop"); :}
-            | FOR IDENTIFIER IN Expression RANGE Expression LOOP Statement END
-              {: System.out.println("For loop"); :}
-            | RETURN Expression
-              {: System.out.println("Return statement"); :};
+Statement ::= IDENTIFIER:id ASSIGN Expression:e
+            {: RESULT = new AssignmentNode(new IdentifierNode(id), e); :}
+            | IF Expression:e THEN Statement:s1 ELSE Statement:s2 END
+              {: RESULT = new IfElseNode(e, s1, s2); :}
+            | WHILE Expression:e LOOP Statement:s END
+              {: RESULT = new WhileLoopNode(e, s); :}
+            | FOR IDENTIFIER:id IN Expression:e1 RANGE Expression:e2 LOOP Statement:s END
+              {: RESULT = new ForLoopNode(new IdentifierNode(id), e1, e2, s); :}
+            | RETURN Expression:e
+              {: RESULT = new ReturnNode(e); :};
 
-Expression ::= Expression PLUS Expression
-             | Expression MINUS Expression
-             | Expression MULTIPLY Expression
-             | Expression DIVIDE Expression
-             | Expression EQUAL Expression
-             | Expression GREATER_THAN Expression
-             | Expression LESS_THAN Expression
-             | NOT Expression
+Expression ::= Expression:left PLUS Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "+"); :}
+             | Expression:left MINUS Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "-"); :}
+             | Expression:left MULTIPLY Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "*"); :}
+             | Expression:left DIVIDE Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "/"); :}
+             | Expression:left EQUAL Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "=="); :}
+             | Expression:left GREATER_THAN Expression:right
+             {: RESULT = new BinaryOpNode(left, right, ">"); :}
+             | Expression:left LESS_THAN Expression:right
+             {: RESULT = new BinaryOpNode(left, right, "<"); :}
+             | NOT Expression:e
+             {: RESULT = new UnaryOpNode(e, "not"); :}
              | TRUE
+             {: RESULT = new BooleanNode(true); :}
              | FALSE
-             | NUMBER
-             | REAL
-             | IDENTIFIER
-             | LPAREN Expression RPAREN;
+             {: RESULT = new BooleanNode(false); :}
+             | NUMBER:n
+             {: RESULT = new NumberNode(n); :}
+             | REAL:r
+             {: RESULT = new RealNode(r); :}
+             | IDENTIFIER:id
+             {: RESULT = new IdentifierNode(id); :}
+             | LPAREN Expression:e RPAREN
+             {: RESULT = e; :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration SEMICOLON Statement END
-            {: System.out.println("Function definition: " + id); :};
+Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration:d SEMICOLON Statement:s END
+            {: RESULT = new FunctionNode(id, d, s); :};
