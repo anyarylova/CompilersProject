@@ -370,6 +370,14 @@ class IfElseNode extends StatementNode {
         if (elseStmt != null) elseStmt.setParent(this);
     }
 
+    public IfElseNode(ExpressionNode condition, StatementNode thenStmt) {
+        this.condition = condition;
+        this.thenStmt = thenStmt;
+        this.elseStmt = null;
+        if (condition != null) condition.setParent(this);
+        if (thenStmt != null) thenStmt.setParent(this);
+    }
+
     public ExpressionNode getCondition() {
         return condition;
     }

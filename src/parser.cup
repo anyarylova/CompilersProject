@@ -94,6 +94,8 @@ Variable ::= IDENTIFIER:id
 
 CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenStmt ELSE StatementBlock:elseStmt END
                       {: RESULT = new IfElseNode(cond, thenStmt, elseStmt); :}
+                    | IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenStmt END
+                      {: RESULT = new IfElseNode(cond, thenStmt); :}
                     | WHILE LPAREN Expression:cond RPAREN LOOP StatementBlock:body END
                       {: RESULT = new WhileLoopNode(cond, body); :}
                     | FOR IDENTIFIER:id IN LBRACKET Expression:start RANGE Expression:end RBRACKET LOOP StatementBlock:body END
