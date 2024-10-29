@@ -14,7 +14,7 @@ public class SemanticAnalyzer {
         performSemanticChecks(ast);
 
         // Remove unused variables
-        // removeUnusedVariables(ast);
+        removeUnusedVariables(ast);
 
         // Perform optimizations
         performOptimizations(ast);
@@ -385,28 +385,50 @@ public class SemanticAnalyzer {
     /* Removing Unused Variables */
 
     private void removeUnusedVariables(ASTNode node) {
+        // Check if node is a ProgramNode
         if (node instanceof ProgramNode) {
-            removeUnusedVariables((ProgramNode) node);
-        } else if (node instanceof DeclarationNode) {
-            String id = ((DeclarationNode) node).getIdentifier();
-            if (unusedVariables.contains(id)) {
-                // Remove this declaration from its parent
-                ASTNode parent = node.getParent();
-                if (parent instanceof ProgramNode) {
-                    ((ProgramNode) parent).getChildren().remove(node);
-                } else if (parent instanceof RecordTypeNode) {
-                    ((RecordTypeNode) parent).getFields().remove(node);
+            ProgramNode program = (ProgramNode) node;
+            // We need to collect nodes to remove in a separate list to avoid concurrent modification
+            List<ASTNode> toRemove = new ArrayList<>();
+            
+            for (ASTNode child : program.getChildren()) {
+                // Recursively check child nodes
+                removeUnusedVariables(child);
+                // If the child is an unused DeclarationNode, mark it for removal
+                if (child instanceof DeclarationNode) {
+                    DeclarationNode decl = (DeclarationNode) child;
+                    String id = decl.getIdentifier();
+                    if (unusedVariables.contains(id)) {
+                        toRemove.add(child); // Add unused variable to the removal list
+                    }
                 }
+            }
+    
+            // Remove all unused variables after the iteration
+            for (ASTNode declNode : toRemove) {
+                program.getChildren().remove(declNode);
+                DeclarationNode decl = (DeclarationNode) declNode;
+                String id = decl.getIdentifier();
                 symbolTable.remove(id);
                 unusedVariables.remove(id);
-                declaredVariables.remove(id);
                 System.out.println("Optimization: Removed unused variable '" + id + "'.");
             }
-        } else {
-            // Recursively remove unused variables in child nodes
-            for (ASTNode child : getChildren(node)) {
-                removeUnusedVariables(child);
+    
+        // Check if node is a DeclarationNode and remove it if unused
+        } else if (node instanceof DeclarationNode) {
+            DeclarationNode decl = (DeclarationNode) node;
+            String id = decl.getIdentifier();
+            if (unusedVariables.contains(id)) {
+                // Remove this declaration if it is unused
+                unusedVariables.remove(id);
+                symbolTable.remove(id);
+                System.out.println("Optimization: Removed unused variable '" + id + "'.");
             }
+        }
+    
+        // Recursively handle child nodes
+        for (ASTNode child : getChildren(node)) {
+            removeUnusedVariables(child);
         }
     }
 
@@ -638,6 +660,37 @@ public class SemanticAnalyzer {
                         result = leftVal * rightVal;
                         break;
                     case "/":
+                        if (leftVal % rightVal == 0) {
+                            result = leftVal / rightVal;
+                            break;
+                        } else {
+                            double res = leftVal / rightVal;
+                            return new RealNode(res);
+                        }
+                    case "==":
+                        return new BooleanNode(leftVal == rightVal);
+                    case ">":
+                        return new BooleanNode(leftVal > rightVal);
+                    case "<":
+                        return new BooleanNode(leftVal < rightVal);
+                }
+                return new NumberNode(result);
+
+            } else if (left instanceof RealNode && right instanceof RealNode) {
+                double leftVal = ((RealNode) left).getValue();
+                double rightVal = ((RealNode) right).getValue();
+                double result = 0;
+                switch (operator) {
+                    case "+":
+                        result = leftVal + rightVal;
+                        break;
+                    case "-":
+                        result = leftVal - rightVal;
+                        break;
+                    case "*":
+                        result = leftVal * rightVal;
+                        break;
+                    case "/":
                         result = leftVal / rightVal;
                         break;
                     case "==":
@@ -647,7 +700,8 @@ public class SemanticAnalyzer {
                     case "<":
                         return new BooleanNode(leftVal < rightVal);
                 }
-                return new NumberNode(result);
+                return new RealNode(result);
+
             } else if (left instanceof BooleanNode && right instanceof BooleanNode) {
                 boolean leftVal = ((BooleanNode) left).isValue();
                 boolean rightVal = ((BooleanNode) right).isValue();
