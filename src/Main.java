@@ -1,8 +1,8 @@
-/* Es 1 - Ex 1 (Main) */
+/* Main.java */
 import java.io.*;
-   
+
 public class Main {
-  static public void main(String argv[]) {    
+  static public void main(String argv[]) {
     try {
       /* Scanner instantiation */
       Yylex l = new Yylex(new FileReader(argv[0]));
@@ -14,16 +14,22 @@ public class Main {
         // Create the semantic analyzer
         SemanticAnalyzer analyzer = new SemanticAnalyzer();
 
+        // Print AST before optimization
+        System.out.println("AST before optimization:");
+        analyzer.printAST(ast, 0);
+
         // Analyze the AST for semantic errors and optimizations
         System.out.println("Running semantic analysis and optimizations...");
         analyzer.analyze(ast);
-    } else {
+
+        // Print AST after optimization
+        System.out.println("AST after optimization:");
+        analyzer.printAST(ast, 0);
+      } else {
         System.out.println("Parsing failed: AST is null.");
-    }
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 }
-
-

@@ -1,7 +1,8 @@
-/* parser.cup - Grammar specification for the custom language */
-import java.util.*;  // for List
+/* parser.cup - Grammar specification for the custom language with AST support */
 import java_cup.runtime.*;
+import java.util.*;
 
+/* Terminal definitions */
 terminal VAR, INTEGER_TYPE, BOOLEAN_TYPE, REAL_TYPE, ARRAY, RECORD, TRUE, FALSE, IS;
 terminal IF, THEN, ELSE, END, FOR, IN, LOOP, WHILE, ROUTINE, RETURN;
 terminal PLUS, MINUS, MULTIPLY, DIVIDE, ASSIGN, EQUAL, GREATER_THAN, LESS_THAN;
@@ -11,14 +12,23 @@ terminal String IDENTIFIER;
 terminal Integer NUMBER;
 terminal Double REAL;
 
+/* Non-terminal definitions */
 non terminal ProgramNode Program;
+non terminal List<ASTNode> ProgramElements;
+non terminal ASTNode ProgramElement;
 non terminal DeclarationNode Declaration;
-non terminal StatementNode Statement;
-non terminal ExpressionNode Expression;
 non terminal TypeNode Type;
+non terminal StatementNode Statement;
+non terminal StatementBlockNode StatementBlock;
+non terminal StatementNode SimpleStatement;
+non terminal StatementNode CompoundStatement;
+non terminal ExpressionNode Expression;
+non terminal List<ExpressionNode> ExpressionList;
 non terminal FunctionNode Function;
+non terminal ExpressionNode Variable;
+non terminal List<DeclarationNode> DeclarationList; 
 
-/* Define precedences */
+/* Precedence rules */
 precedence left OR, AND, XOR;
 precedence left EQUAL, LESS_THAN, GREATER_THAN;
 precedence left PLUS, MINUS;
@@ -26,66 +36,104 @@ precedence left MULTIPLY, DIVIDE;
 precedence right NOT;
 
 /* Grammar rules */
-Program ::= Declaration:d SEMICOLON
-          {: RESULT = new ProgramNode(Collections.singletonList(d)); :}
-          | Statement:s SEMICOLON
-          {: RESULT = new ProgramNode(Collections.singletonList(s)); :}
-          | Function:f SEMICOLON
-          {: RESULT = new ProgramNode(Collections.singletonList(f)); :};
+Program ::= ProgramElements:e 
+           {: RESULT = new ProgramNode(e); :};
 
-Declaration ::= VAR IDENTIFIER:id COLON Type:t IS Expression:e
-              {: RESULT = new DeclarationNode(id, t, e); :};
+ProgramElements ::= ProgramElements:e1 ProgramElement:e2
+                  {: e1.add(e2); RESULT = e1; :}
+                  | ProgramElement:e
+                  {: RESULT = new ArrayList<>(Arrays.asList(e)); :};
+
+ProgramElement ::= Declaration:d SEMICOLON
+                  {: RESULT = d; :}
+                | Statement:s
+                  {: RESULT = s; :}
+                | Function:f
+                  {: RESULT = f; :};
+
+Declaration ::= VAR IDENTIFIER:id COLON Type:type IS Expression:expr
+               {: RESULT = new DeclarationNode(id, type, expr); :}
+              | VAR IDENTIFIER:id COLON Type:type
+              {: RESULT = new DeclarationNode(id, type, null); :};
 
 Type ::= INTEGER_TYPE
-       {: RESULT = new IntegerTypeNode(); :}
-       | BOOLEAN_TYPE
-       {: RESULT = new BooleanTypeNode(); :}
-       | REAL_TYPE
-       {: RESULT = new RealTypeNode(); :}
-       | ARRAY LBRACKET NUMBER:n RBRACKET Type:t
-         {: RESULT = new ArrayTypeNode(n, t); :}
-       | RECORD Declaration:d END
-         {: RESULT = new RecordTypeNode(Collections.singletonList(d)); :};
+        {: RESULT = new IntegerTypeNode(); :}
+      | BOOLEAN_TYPE
+        {: RESULT = new BooleanTypeNode(); :}
+      | REAL_TYPE
+        {: RESULT = new RealTypeNode(); :}
+      | ARRAY LBRACKET NUMBER:size RBRACKET Type:elementType
+        {: RESULT = new ArrayTypeNode(size, elementType); :}
+      | RECORD DeclarationList:fields END
+        {: RESULT = new RecordTypeNode(fields); :};
 
-Statement ::= IDENTIFIER:id ASSIGN Expression:e
-            {: RESULT = new AssignmentNode(new IdentifierNode(id), e); :}
-            | IF Expression:e THEN Statement:s1 ELSE Statement:s2 END
-              {: RESULT = new IfElseNode(e, s1, s2); :}
-            | WHILE Expression:e LOOP Statement:s END
-              {: RESULT = new WhileLoopNode(e, s); :}
-            | FOR IDENTIFIER:id IN Expression:e1 RANGE Expression:e2 LOOP Statement:s END
-              {: RESULT = new ForLoopNode(new IdentifierNode(id), e1, e2, s); :}
-            | RETURN Expression:e
-              {: RESULT = new ReturnNode(e); :};
+DeclarationList ::= DeclarationList:fields Declaration:d SEMICOLON
+                    {: fields.add(d); RESULT = fields; :}
+                    | Declaration:d SEMICOLON
+                    {: RESULT = new ArrayList<>(Arrays.asList(d)); :};
+
+StatementBlock ::= StatementBlock:s1 Statement:s2
+                 {: s1.getStatements().add(s2); RESULT = s1; :}
+                 | Statement:s
+                 {: RESULT = new StatementBlockNode(new ArrayList<>(Arrays.asList(s))); :};
+
+Statement ::= SimpleStatement:s SEMICOLON
+             {: RESULT = s; :}
+           | CompoundStatement:cs
+             {: RESULT = cs; :};
+
+SimpleStatement ::= Variable:s1 ASSIGN Expression:expr
+                   {: RESULT = new AssignmentNode(s1, expr); :}
+                 | RETURN Expression:expr
+                   {: RESULT = new ReturnNode(expr); :};
+
+Variable ::= IDENTIFIER:id
+            {: RESULT = new IdentifierNode(id); :}
+          | Variable:s1 LBRACKET Expression:index RBRACKET
+            {: RESULT = new ArrayAccessNode(s1, index); :};
+
+CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenStmt ELSE StatementBlock:elseStmt END
+                      {: RESULT = new IfElseNode(cond, thenStmt, elseStmt); :}
+                    | WHILE LPAREN Expression:cond RPAREN LOOP StatementBlock:body END
+                      {: RESULT = new WhileLoopNode(cond, body); :}
+                    | FOR IDENTIFIER:id IN LBRACKET Expression:start RANGE Expression:end RBRACKET LOOP StatementBlock:body END
+                      {: RESULT = new ForLoopNode(new IdentifierNode(id), start, end, body); :};
 
 Expression ::= Expression:left PLUS Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "+"); :}
-             | Expression:left MINUS Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "-"); :}
-             | Expression:left MULTIPLY Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "*"); :}
-             | Expression:left DIVIDE Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "/"); :}
-             | Expression:left EQUAL Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "=="); :}
-             | Expression:left GREATER_THAN Expression:right
-             {: RESULT = new BinaryOpNode(left, right, ">"); :}
-             | Expression:left LESS_THAN Expression:right
-             {: RESULT = new BinaryOpNode(left, right, "<"); :}
-             | NOT Expression:e
-             {: RESULT = new UnaryOpNode(e, "not"); :}
-             | TRUE
-             {: RESULT = new BooleanNode(true); :}
-             | FALSE
-             {: RESULT = new BooleanNode(false); :}
-             | NUMBER:n
-             {: RESULT = new NumberNode(n); :}
-             | REAL:r
-             {: RESULT = new RealNode(r); :}
-             | IDENTIFIER:id
-             {: RESULT = new IdentifierNode(id); :}
-             | LPAREN Expression:e RPAREN
-             {: RESULT = e; :};
+              {: RESULT = new BinaryOpNode(left, right, "+"); :}
+            | Expression:left MINUS Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "-"); :}
+            | Expression:left MULTIPLY Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "*"); :}
+            | Expression:left DIVIDE Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "/"); :}
+            | Expression:left EQUAL Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "=="); :}
+            | Expression:left GREATER_THAN Expression:right
+              {: RESULT = new BinaryOpNode(left, right, ">"); :}
+            | Expression:left LESS_THAN Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "<"); :}
+            | NOT Expression:expr
+              {: RESULT = new UnaryOpNode(expr, "NOT"); :}
+            | TRUE
+              {: RESULT = new BooleanNode(true); :}
+            | FALSE
+              {: RESULT = new BooleanNode(false); :}
+            | NUMBER:num
+              {: RESULT = new NumberNode(num); :}
+            | REAL:real
+              {: RESULT = new RealNode(real); :}
+            | Variable:v
+              {: RESULT = v; :}
+            | LPAREN Expression:expr RPAREN
+              {: RESULT = expr; :}
+            | LBRACKET ExpressionList:list RBRACKET
+              {: RESULT = new ExpressionListNode(list); :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS Declaration:d SEMICOLON Statement:s END
-            {: RESULT = new FunctionNode(id, d, s); :};
+ExpressionList ::= ExpressionList:el COMMA Expression:expr
+                   {: el.add(expr); RESULT = el; :}
+                 | Expression:expr
+                   {: RESULT = new ArrayList<>(Arrays.asList(expr)); :};
+
+Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS DeclarationList:params SEMICOLON StatementBlock:body END
+             {: RESULT = new FunctionNode(id, params, null, body); :};
