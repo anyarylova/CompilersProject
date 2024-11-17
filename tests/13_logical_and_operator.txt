@@ -1,4 +1,4 @@
 var x: integer is 5;
 if (x > 0 and x < 10) then
   x = 15;
-end
+end;
