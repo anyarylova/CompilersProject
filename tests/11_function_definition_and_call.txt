@@ -1,5 +1,5 @@
 routine add(a: integer, b: integer): integer is
     return a + b;
-end;
+end
 
-var result: integer is add(2, 3) 
+var result: integer is add(2, 3);
