@@ -37,11 +37,26 @@ public class SemanticAnalyzer {
         // Handle other node types if necessary
     }
 
-    private void performSemanticChecks(ProgramNode node) {
-        for (ASTNode child : node.getChildren()) {
-            performSemanticChecks(child);
+private void performSemanticChecks(ProgramNode node) {
+    
+    // First pass: register all functions
+    for (ASTNode child : node.getChildren()) {
+        if (child instanceof FunctionNode) {
+            FunctionNode functionNode = (FunctionNode) child;
+            if (functionTable.containsKey(functionNode.getIdentifier())) {
+                System.err.println("Semantic Error: Function '" + functionNode.getIdentifier() + "' is already declared.");
+            } else {
+                functionTable.put(functionNode.getIdentifier(), functionNode);
+            }
         }
     }
+
+    // Second pass: perform semantic checks
+    for (ASTNode child : node.getChildren()) {
+        performSemanticChecks(child);
+    }
+}
+
 
     private void performSemanticChecks(FunctionNode node) {
         if (functionTable.containsKey(node.getIdentifier())) {
@@ -301,6 +316,42 @@ public class SemanticAnalyzer {
                 }
             }
         }
+        else if (node instanceof FunctionCallNode) {
+            FunctionCallNode funcCall = (FunctionCallNode) node;
+            String functionName = funcCall.getFunctionName();
+
+            // Check if the function is declared
+            if (!functionTable.containsKey(functionName)) {
+                System.err.println("Semantic Error: Function '" + functionName + "' is not declared.");
+            } else {
+                FunctionNode function = functionTable.get(functionName);
+                List<DeclarationNode> params = function.getParameters();
+                List<ExpressionNode> args = funcCall.getArguments();
+
+                // Check if the number of arguments matches
+                if (params.size() != args.size()) {
+                    System.err.println("Semantic Error: Function '" + functionName + "' expects " +
+                            params.size() + " arguments but got " + args.size() + ".");
+                } else {
+                    // Check if argument types match parameter types
+                    for (int i = 0; i < params.size(); i++) {
+                        DeclarationNode param = params.get(i);
+                        ExpressionNode arg = args.get(i);
+
+                        performSemanticChecks(arg); // Check the argument expression
+
+                        TypeNode paramType = param.getType();
+                        TypeNode argType = getType(arg);
+
+                        if (!typeEquals(paramType, argType)) {
+                            System.err.println("Type Error: Argument " + (i + 1) + " of function '" + functionName +
+                                    "' expects type " + typeName(paramType) + " but got " + typeName(argType) + ".");
+                        }
+                    }
+                }
+            }
+        }
+                
         // Handle other expression types if necessary
     }
 
@@ -353,6 +404,18 @@ public class SemanticAnalyzer {
                 }
             }
             return null;
+        } else if (expr instanceof FunctionCallNode) {
+            FunctionCallNode funcCall = (FunctionCallNode) expr;
+            String functionName = funcCall.getFunctionName();
+
+            // Check if the function is declared
+            if (!functionTable.containsKey(functionName)) {
+                System.err.println("Semantic Error: Function '" + functionName + "' is not declared.");
+                return null;
+            } else {
+                FunctionNode function = functionTable.get(functionName);
+                return function.getReturnType();
+            }
         }
         return null;
     }
@@ -934,7 +997,17 @@ public class SemanticAnalyzer {
             for (StatementNode stmt : blockNode.getStatements()) {
                 printAST(stmt, indent + 2);
             }
-        } else {
+        }  else if (node instanceof FunctionCallNode) {
+            FunctionCallNode funcCall = (FunctionCallNode) node;
+            System.out.println(indentation + "FunctionCall: " + funcCall.getFunctionName());
+            if (funcCall.getArguments() != null && !funcCall.getArguments().isEmpty()) {
+                System.out.println(indentation + "  Arguments:");
+                for (ExpressionNode arg : funcCall.getArguments()) {
+                    printAST(arg, indent + 4);
+                }
+            }
+        }        
+         else {
             System.out.println(indentation + "Unknown Node Type: " + node.getClass().getSimpleName());
         }
     }

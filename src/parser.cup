@@ -27,6 +27,8 @@ non terminal List<ExpressionNode> ExpressionList;
 non terminal FunctionNode Function;
 non terminal ExpressionNode Variable;
 non terminal List<DeclarationNode> DeclarationList; 
+non terminal List<DeclarationNode> ParameterList;
+non terminal DeclarationNode Parameter;
 
 /* Precedence rules */
 precedence left OR, AND, XOR;
@@ -58,7 +60,9 @@ Type ::= INTEGER_TYPE
       | REAL_TYPE
         {: RESULT = new RealTypeNode(); :}
       | ARRAY LBRACKET NUMBER:size RBRACKET Type:elementType
-        {: RESULT = new ArrayTypeNode(size, elementType); :};
+        {: RESULT = new ArrayTypeNode(size, elementType); :}
+      | RECORD IS DeclarationList:fields END
+        {: RESULT = new RecordTypeNode(fields); :};
 
 Declaration ::= VAR IDENTIFIER:id COLON Type:type IS Expression:expr
                {: RESULT = new DeclarationNode(id, type, expr); :}
@@ -105,7 +109,11 @@ CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenS
                     | FOR IDENTIFIER:id IN LBRACKET Expression:start RANGE Expression:end RBRACKET LOOP StatementBlock:body END
                       {: RESULT = new ForLoopNode(new IdentifierNode(id), start, end, body); :};
 
-Expression ::= Expression:left PLUS Expression:right
+Expression ::= IDENTIFIER:id LPAREN ExpressionList:args RPAREN
+              {: RESULT = new FunctionCallNode(id, args); :}
+            | IDENTIFIER:id LPAREN RPAREN
+              {: RESULT = new FunctionCallNode(id, new ArrayList<>()); :}
+            | Expression:left PLUS Expression:right
               {: RESULT = new BinaryOpNode(left, right, "+"); :}
             | Expression:left MINUS Expression:right
               {: RESULT = new BinaryOpNode(left, right, "-"); :}
@@ -147,7 +155,20 @@ ExpressionList ::= ExpressionList:el COMMA Expression:expr
                  | Expression:expr
                    {: RESULT = new ArrayList<>(Arrays.asList(expr)); :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN DeclarationList:params RPAREN COLON Type:returnType IS StatementBlock:body END
+// Function ::= ROUTINE IDENTIFIER:id LPAREN DeclarationList:params RPAREN COLON Type:returnType IS StatementBlock:body END
+//              {: RESULT = new FunctionNode(id, params, returnType, body); :}
+//            | ROUTINE IDENTIFIER:id LPAREN RPAREN COLON Type:returnType IS StatementBlock:body END
+//              {: RESULT = new FunctionNode(id, new ArrayList<>(), returnType, body); :};
+Function ::= ROUTINE IDENTIFIER:id LPAREN ParameterList:params RPAREN COLON Type:returnType IS StatementBlock:body END
              {: RESULT = new FunctionNode(id, params, returnType, body); :}
            | ROUTINE IDENTIFIER:id LPAREN RPAREN COLON Type:returnType IS StatementBlock:body END
              {: RESULT = new FunctionNode(id, new ArrayList<>(), returnType, body); :};
+
+/* Define ParameterList and Parameter */
+ParameterList ::= ParameterList:plist COMMA Parameter:param
+                 {: plist.add(param); RESULT = plist; :}
+               | Parameter:param
+                 {: RESULT = new ArrayList<>(Arrays.asList(param)); :};
+
+Parameter ::= IDENTIFIER:id COLON Type:type
+             {: RESULT = new DeclarationNode(id, type, null); :};
