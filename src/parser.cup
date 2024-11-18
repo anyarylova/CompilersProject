@@ -51,11 +51,6 @@ ProgramElement ::= Declaration:d SEMICOLON
                 | Function:f
                   {: RESULT = f; :};
 
-Declaration ::= VAR IDENTIFIER:id COLON Type:type IS Expression:expr
-               {: RESULT = new DeclarationNode(id, type, expr); :}
-              | VAR IDENTIFIER:id COLON Type:type
-              {: RESULT = new DeclarationNode(id, type, null); :};
-
 Type ::= INTEGER_TYPE
         {: RESULT = new IntegerTypeNode(); :}
       | BOOLEAN_TYPE
@@ -63,9 +58,12 @@ Type ::= INTEGER_TYPE
       | REAL_TYPE
         {: RESULT = new RealTypeNode(); :}
       | ARRAY LBRACKET NUMBER:size RBRACKET Type:elementType
-        {: RESULT = new ArrayTypeNode(size, elementType); :}
-      | RECORD DeclarationList:fields END
-        {: RESULT = new RecordTypeNode(fields); :};
+        {: RESULT = new ArrayTypeNode(size, elementType); :};
+
+Declaration ::= VAR IDENTIFIER:id COLON Type:type IS Expression:expr
+               {: RESULT = new DeclarationNode(id, type, expr); :}
+              | VAR IDENTIFIER:id COLON Type:type
+              {: RESULT = new DeclarationNode(id, type, null); :};
 
 DeclarationList ::= DeclarationList:fields Declaration:d SEMICOLON
                     {: fields.add(d); RESULT = fields; :}
@@ -95,8 +93,8 @@ SimpleStatement ::= Variable:s1 ASSIGN Expression:expr
 
 Variable ::= IDENTIFIER:id
             {: RESULT = new IdentifierNode(id); :}
-          | Variable:s1 LBRACKET Expression:index RBRACKET
-            {: RESULT = new ArrayAccessNode(s1, index); :};
+          | IDENTIFIER:id LBRACKET Expression:index RBRACKET
+            {: RESULT = new ArrayAccessNode(new IdentifierNode(id), index); :};
 
 CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenStmt ELSE StatementBlock:elseStmt END
                       {: RESULT = new IfElseNode(cond, thenStmt, elseStmt); :}
