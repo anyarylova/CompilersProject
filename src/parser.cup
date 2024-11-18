@@ -69,7 +69,13 @@ Type ::= INTEGER_TYPE
 
 DeclarationList ::= DeclarationList:fields Declaration:d SEMICOLON
                     {: fields.add(d); RESULT = fields; :}
-                    | Declaration:d SEMICOLON
+                  | Declaration:d SEMICOLON
+                    {: RESULT = new ArrayList<>(Arrays.asList(d)); :}
+                  | DeclarationList:fields Declaration:d
+                    {: fields.add(d); RESULT = fields; :}
+                  | DeclarationList:fields COMMA Declaration:d
+                    {: fields.add(d); RESULT = fields; :}
+                  | Declaration:d
                     {: RESULT = new ArrayList<>(Arrays.asList(d)); :};
 
 StatementBlock ::= StatementBlock:s1 Statement:s2
@@ -105,6 +111,12 @@ Expression ::= Expression:left PLUS Expression:right
               {: RESULT = new BinaryOpNode(left, right, "+"); :}
             | Expression:left MINUS Expression:right
               {: RESULT = new BinaryOpNode(left, right, "-"); :}
+            | Expression:left AND Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "AND"); :}
+            | Expression:left OR Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "OR"); :}
+            | Expression:left XOR Expression:right
+              {: RESULT = new BinaryOpNode(left, right, "XOR"); :}
             | Expression:left MULTIPLY Expression:right
               {: RESULT = new BinaryOpNode(left, right, "*"); :}
             | Expression:left DIVIDE Expression:right
@@ -137,5 +149,7 @@ ExpressionList ::= ExpressionList:el COMMA Expression:expr
                  | Expression:expr
                    {: RESULT = new ArrayList<>(Arrays.asList(expr)); :};
 
-Function ::= ROUTINE IDENTIFIER:id LPAREN RPAREN IS DeclarationList:params SEMICOLON StatementBlock:body END
-             {: RESULT = new FunctionNode(id, params, null, body); :};
+Function ::= ROUTINE IDENTIFIER:id LPAREN DeclarationList:params RPAREN COLON Type:returnType IS StatementBlock:body END
+             {: RESULT = new FunctionNode(id, params, returnType, body); :}
+           | ROUTINE IDENTIFIER:id LPAREN RPAREN COLON Type:returnType IS StatementBlock:body END
+             {: RESULT = new FunctionNode(id, new ArrayList<>(), returnType, body); :};
