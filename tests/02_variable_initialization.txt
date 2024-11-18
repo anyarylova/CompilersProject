@@ -1,1 +1,1 @@
-var x: integer is 5
+var x: integer is 5;
