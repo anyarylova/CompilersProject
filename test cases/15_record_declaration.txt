@@ -3,3 +3,5 @@ var rec : record is
 	var y: real;
 	var z: boolean;
 end;
+
+print rec;

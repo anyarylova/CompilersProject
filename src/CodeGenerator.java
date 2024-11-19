@@ -62,6 +62,13 @@ public class CodeGenerator implements Opcodes {
         mv.visitMaxs(0, 0);
         mv.visitEnd();
 
+        // Generate print methods for records
+        for (Map.Entry<RecordTypeNode, String> entry : recordTypeClasses.entrySet()) {
+            RecordTypeNode recordType = entry.getKey();
+            String recordClassName = entry.getValue();
+            generatePrintMethodForRecord(recordClassName, recordType);
+        }
+
         // End of class
         cw.visitEnd();
 
@@ -72,6 +79,7 @@ public class CodeGenerator implements Opcodes {
 
         System.out.println("Bytecode generation completed. Class file written to " + className + ".class");
     }
+
 
     private void generateFunction(FunctionNode node) {
         // Reset local variable index for the function
@@ -137,11 +145,12 @@ public class CodeGenerator implements Opcodes {
             String elementTypeDescriptor = getTypeDescriptor(arrayType.getElementType());
             return "[" + elementTypeDescriptor;
         } else if (type instanceof RecordTypeNode) {
-            String recordClassName = generateRecordClass((RecordTypeNode) type);
+            String recordClassName = getRecordClassNameFromType((RecordTypeNode) type);
             return "L" + recordClassName + ";";
         }
         return "V"; // Void
     }
+
 
     private void generateDeclaration(DeclarationNode node) {
         String varName = node.getIdentifier();
@@ -353,16 +362,80 @@ public class CodeGenerator implements Opcodes {
     }
 
     private void generatePrint(PrintNode node) {
-        generateExpression(node.getExpression());
         TypeNode exprType = getType(node.getExpression());
         if (exprType instanceof IntegerTypeNode || exprType instanceof BooleanTypeNode) {
+            generateExpression(node.getExpression());
             mv.visitMethodInsn(INVOKESTATIC, className, "printInt", "(I)V", false);
         } else if (exprType instanceof RealTypeNode) {
+            generateExpression(node.getExpression());
             mv.visitMethodInsn(INVOKESTATIC, className, "printReal", "(D)V", false);
+        } else if (exprType instanceof RecordTypeNode) {
+            generateExpression(node.getExpression());
+            String recordClassName = getRecordClassName(node.getExpression());
+            mv.visitMethodInsn(INVOKESTATIC, className, "print" + recordClassName, "(L" + recordClassName + ";)V", false);
         } else {
             throw new RuntimeException("Unsupported type for print statement.");
         }
     }
+
+    private void generatePrintMethodForRecord(String recordClassName, RecordTypeNode recordType) {
+        MethodVisitor mvPrint = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "print" + recordClassName, "(L" + recordClassName + ";)V", null, null);
+        mvPrint.visitCode();
+
+        // Print opening brace
+        mvPrint.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrint.visitLdcInsn("{");
+        mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+
+        List<DeclarationNode> fields = recordType.getFields();
+        for (int i = 0; i < fields.size(); i++) {
+            DeclarationNode field = fields.get(i);
+            String fieldName = field.getIdentifier();
+            TypeNode fieldType = field.getType();
+            String fieldDescriptor = getTypeDescriptor(fieldType);
+
+            // Print field name
+            mvPrint.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+            mvPrint.visitLdcInsn("\"" + fieldName + "\": ");
+            mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+
+            // Load field value
+            mvPrint.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+            mvPrint.visitVarInsn(ALOAD, 0); // Load the record object
+            mvPrint.visitFieldInsn(GETFIELD, recordClassName, fieldName, fieldDescriptor);
+
+            // Print field value based on its type
+            if (fieldType instanceof IntegerTypeNode || fieldType instanceof BooleanTypeNode) {
+                mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false);
+            } else if (fieldType instanceof RealTypeNode) {
+                mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(D)V", false);
+            } else if (fieldType instanceof RecordTypeNode) {
+                // Recursive call to print nested records
+                String nestedRecordClassName = getRecordClassNameFromType((RecordTypeNode) fieldType);
+                mvPrint.visitMethodInsn(INVOKESTATIC, className, "print" + nestedRecordClassName, "(L" + nestedRecordClassName + ";)V", false);
+            } else {
+                throw new RuntimeException("Unsupported field type in record for printing.");
+            }
+
+            // Print comma if not the last field
+            if (i < fields.size() - 1) {
+                mvPrint.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+                mvPrint.visitLdcInsn(", ");
+                mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+            }
+        }
+
+        // Print closing brace and newline
+        mvPrint.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrint.visitLdcInsn("}");
+        mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+
+        mvPrint.visitInsn(RETURN);
+        mvPrint.visitMaxs(0, 0);
+        mvPrint.visitEnd();
+    }
+
+
 
     private void generateExpression(ExpressionNode node) {
         if (node instanceof NumberNode) {

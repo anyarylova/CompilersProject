@@ -1,4 +1,7 @@
-var x: boolean is false;
-x := 0;
+var rec : record is 
+	var x: integer;
+	var y: real;
+	var z: boolean;
+end;
 
-print x;
+print rec;
