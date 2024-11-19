@@ -245,7 +245,11 @@ class Interpreter {
             Object value = evaluate(node.getExpression(), env);
             Object varValue = env.get(name);
 
-            if (varValue instanceof Integer && value instanceof Double) {
+            if (varValue instanceof Boolean && value instanceof Integer) {
+                // Convert Integer to Boolean
+                boolean boolValue = ((Integer) value) != 0;
+                env.assign(name, boolValue);
+            } else if (varValue instanceof Integer && value instanceof Double) {
                 // Convert Double to Integer by truncation
                 int intValue = ((Double) value).intValue();
                 env.assign(name, intValue);

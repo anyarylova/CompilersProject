@@ -182,6 +182,8 @@ public class CodeGenerator implements Opcodes {
         if (node instanceof AssignmentNode) {
             AssignmentNode assignNode = (AssignmentNode) node;
             TypeNode exprType = getType(assignNode.getExpression());
+            String varName = ((IdentifierNode) assignNode.getVariable()).getName();
+            TypeNode varType = variableTypes.get(varName);
 
             if (assignNode.getVariable() instanceof IdentifierNode) {
                 // String varName = ((IdentifierNode) assignNode.getVariable()).getName();
@@ -191,11 +193,24 @@ public class CodeGenerator implements Opcodes {
                 // }
                 // generateExpression(assignNode.getExpression());
                 // storeVariable(varName, varType);
-                String varName = ((IdentifierNode) assignNode.getVariable()).getName();
-                TypeNode varType = variableTypes.get(varName);
+
                 // TypeNode exprType = getType(assignNode.getExpression());
 
-                if (varType instanceof IntegerTypeNode && exprType instanceof RealTypeNode) {
+                if (varType instanceof BooleanTypeNode && exprType instanceof IntegerTypeNode) {
+                    // Generate code to evaluate the integer expression
+                    generateExpression(assignNode.getExpression());
+                    Label falseLabel = new Label();
+                    Label endLabel = new Label();
+                    // Convert integer to boolean
+                    mv.visitJumpInsn(IFEQ, falseLabel);
+                    mv.visitInsn(ICONST_1); // True
+                    mv.visitJumpInsn(GOTO, endLabel);
+                    mv.visitLabel(falseLabel);
+                    mv.visitInsn(ICONST_0); // False
+                    mv.visitLabel(endLabel);
+                    // Store the boolean value
+                    storeVariable(varName, varType);
+                } else if (varType instanceof IntegerTypeNode && exprType instanceof RealTypeNode) {
                     // Generate code to evaluate the expression
                     generateExpression(assignNode.getExpression());
                     // Insert conversion from double to int
@@ -576,6 +591,10 @@ public class CodeGenerator implements Opcodes {
         }
         if (t1 instanceof IntegerTypeNode && t2 instanceof RealTypeNode) {
         // Allow assigning Real to Integer with implicit conversion
+            return true;
+        }
+        if (t1 instanceof BooleanTypeNode && t2 instanceof IntegerTypeNode) {
+        // Allow assigning Integer to Boolean with implicit conversion
             return true;
         }
         if (t1.getClass().equals(t2.getClass())) {

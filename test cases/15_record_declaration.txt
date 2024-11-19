@@ -1,5 +1,5 @@
 var rec : record is 
-	var x: integer
-	var y: real
-	var z: boolean
-end
+	var x: integer;
+	var y: real;
+	var z: boolean;
+end;

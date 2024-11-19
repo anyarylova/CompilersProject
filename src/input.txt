@@ -1,10 +1,4 @@
-var numbers: array[5] integer;
-var i: integer;
+var x: boolean is false;
+x := 0;
 
-for i in [0 .. 4] loop
-    numbers[i] := i * 2;
-end
-
-for i in [0 .. 4] loop
-    print numbers[i];
-end
+print x;
