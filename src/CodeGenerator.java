@@ -5,8 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-
-
 public class CodeGenerator implements Opcodes {
     private ClassWriter cw;
     private MethodVisitor mv;
@@ -34,6 +32,9 @@ public class CodeGenerator implements Opcodes {
         // Generate built-in print methods
         generatePrintIntMethod();
         generatePrintRealMethod();
+        generatePrintIntArrayMethod();    // Added
+        generatePrintRealArrayMethod();   // Added
+        generatePrintObjectArrayMethod(); // Added
 
         // Generate code for functions first
         for (ASTNode node : ast.getChildren()) {
@@ -79,7 +80,6 @@ public class CodeGenerator implements Opcodes {
 
         System.out.println("Bytecode generation completed. Class file written to " + className + ".class");
     }
-
 
     private void generateFunction(FunctionNode node) {
         // Reset local variable index for the function
@@ -379,9 +379,253 @@ private void generateStatement(StatementNode node) {
             generateExpression(node.getExpression());
             String recordClassName = getRecordClassName(node.getExpression());
             mv.visitMethodInsn(INVOKESTATIC, className, "print" + recordClassName, "(L" + recordClassName + ";)V", false);
+        } else if (exprType instanceof ArrayTypeNode) {
+            ArrayTypeNode arrayType = (ArrayTypeNode) exprType;
+            TypeNode elementType = arrayType.getElementType();
+            generateExpression(node.getExpression());
+            String methodDescriptor;
+            if (elementType instanceof IntegerTypeNode || elementType instanceof BooleanTypeNode) {
+                methodDescriptor = "([I)V";
+            } else if (elementType instanceof RealTypeNode) {
+                methodDescriptor = "([D)V";
+            } else if (elementType instanceof RecordTypeNode || elementType instanceof ArrayTypeNode) {
+                methodDescriptor = "([Ljava/lang/Object;)V";
+            } else {
+                throw new RuntimeException("Unsupported array element type for printing.");
+            }
+            mv.visitMethodInsn(INVOKESTATIC, className, "printArray", methodDescriptor, false);
         } else {
             throw new RuntimeException("Unsupported type for print statement.");
         }
+    }
+
+    private void generatePrintIntArrayMethod() {
+        MethodVisitor mvPrintArray = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "printArray", "([I)V", null, null);
+        mvPrintArray.visitCode();
+
+        // Implementation for integer arrays
+
+        // Initialize index variable (int i = 0)
+        mvPrintArray.visitInsn(ICONST_0);
+        mvPrintArray.visitVarInsn(ISTORE, 1); // Store index in local variable 1
+
+        // Get array length
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitInsn(ARRAYLENGTH);
+        mvPrintArray.visitVarInsn(ISTORE, 2); // Store length in local variable 2
+
+        // Print opening bracket "["
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("[");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+
+        // Start of loop
+        Label loopStart = new Label();
+        Label loopEnd = new Label();
+        mvPrintArray.visitLabel(loopStart);
+
+        // if (i >= length) goto loopEnd
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitJumpInsn(IF_ICMPGE, loopEnd);
+
+        // Print array element
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitInsn(IALOAD); // Load array[i]
+
+        // Print the element
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false);
+
+        // Print comma if not last element
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitInsn(ICONST_1);
+        mvPrintArray.visitInsn(ISUB); // length - 1
+        Label skipCommaLabel = new Label();
+        mvPrintArray.visitJumpInsn(IF_ICMPEQ, skipCommaLabel);
+        // Print comma
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn(", ");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+        mvPrintArray.visitLabel(skipCommaLabel);
+
+        // Increment i
+        mvPrintArray.visitIincInsn(1, 1); // i++
+
+        // Jump back to start of loop
+        mvPrintArray.visitJumpInsn(GOTO, loopStart);
+
+        // End of loop
+        mvPrintArray.visitLabel(loopEnd);
+
+        // Print closing bracket "]" and newline
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("]");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+
+        mvPrintArray.visitInsn(RETURN);
+        mvPrintArray.visitMaxs(4, 3);
+        mvPrintArray.visitEnd();
+    }
+
+    private void generatePrintRealArrayMethod() {
+        MethodVisitor mvPrintArray = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "printArray", "([D)V", null, null);
+        mvPrintArray.visitCode();
+
+        // Implementation for double arrays
+
+        // Initialize index variable (int i = 0)
+        mvPrintArray.visitInsn(ICONST_0);
+        mvPrintArray.visitVarInsn(ISTORE, 1); // Store index in local variable 1
+
+        // Get array length
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitInsn(ARRAYLENGTH);
+        mvPrintArray.visitVarInsn(ISTORE, 2); // Store length in local variable 2
+
+        // Print opening bracket "["
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("[");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+
+        // Start of loop
+        Label loopStart = new Label();
+        Label loopEnd = new Label();
+        mvPrintArray.visitLabel(loopStart);
+
+        // if (i >= length) goto loopEnd
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitJumpInsn(IF_ICMPGE, loopEnd);
+
+        // Print array element
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitInsn(DALOAD); // Load array[i]
+
+        // Print the element
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(D)V", false);
+
+        // Print comma if not last element
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitInsn(ICONST_1);
+        mvPrintArray.visitInsn(ISUB); // length - 1
+        Label skipCommaLabel = new Label();
+        mvPrintArray.visitJumpInsn(IF_ICMPGE, skipCommaLabel);
+        // Print comma
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn(", ");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+        mvPrintArray.visitLabel(skipCommaLabel);
+
+        // Increment i
+        mvPrintArray.visitIincInsn(1, 1); // i++
+
+        // Jump back to start of loop
+        mvPrintArray.visitJumpInsn(GOTO, loopStart);
+
+        // End of loop
+        mvPrintArray.visitLabel(loopEnd);
+
+        // Print closing bracket "]" and newline
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("]");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+
+        mvPrintArray.visitInsn(RETURN);
+        mvPrintArray.visitMaxs(4, 3);
+        mvPrintArray.visitEnd();
+    }
+
+    private void generatePrintObjectArrayMethod() {
+        MethodVisitor mvPrintArray = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "printArray", "([Ljava/lang/Object;)V", null, null);
+        mvPrintArray.visitCode();
+
+        // Implementation for object arrays (records or nested arrays)
+
+        // Initialize index variable (int i = 0)
+        mvPrintArray.visitInsn(ICONST_0);
+        mvPrintArray.visitVarInsn(ISTORE, 1); // Store index in local variable 1
+
+        // Get array length
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitInsn(ARRAYLENGTH);
+        mvPrintArray.visitVarInsn(ISTORE, 2); // Store length in local variable 2
+
+        // Print opening bracket "["
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("[");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+
+        // Start of loop
+        Label loopStart = new Label();
+        Label loopEnd = new Label();
+        mvPrintArray.visitLabel(loopStart);
+
+        // if (i >= length) goto loopEnd
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitJumpInsn(IF_ICMPGE, loopEnd);
+
+        // Print array element
+        mvPrintArray.visitVarInsn(ALOAD, 0); // Load array reference
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitInsn(AALOAD); // Load array[i]
+
+        // Check if element is null
+        Label notNullLabel = new Label();
+        mvPrintArray.visitInsn(DUP);
+        mvPrintArray.visitJumpInsn(IFNONNULL, notNullLabel);
+        // If null, print "null"
+        mvPrintArray.visitInsn(POP); // Remove null reference
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("null");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+        Label afterPrintLabel = new Label();
+        mvPrintArray.visitJumpInsn(GOTO, afterPrintLabel);
+
+        // If not null, print the element using toString()
+        mvPrintArray.visitLabel(notNullLabel);
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitInsn(SWAP);
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false);
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+        mvPrintArray.visitLabel(afterPrintLabel);
+
+        // Print comma if not last element
+        mvPrintArray.visitVarInsn(ILOAD, 1); // Load i
+        mvPrintArray.visitVarInsn(ILOAD, 2); // Load length
+        mvPrintArray.visitInsn(ICONST_1);
+        mvPrintArray.visitInsn(ISUB); // length - 1
+        Label skipCommaLabel = new Label();
+        mvPrintArray.visitJumpInsn(IF_ICMPGE, skipCommaLabel);
+        // Print comma
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn(", ");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
+        mvPrintArray.visitLabel(skipCommaLabel);
+
+        // Increment i
+        mvPrintArray.visitIincInsn(1, 1); // i++
+
+        // Jump back to start of loop
+        mvPrintArray.visitJumpInsn(GOTO, loopStart);
+
+        // End of loop
+        mvPrintArray.visitLabel(loopEnd);
+
+        // Print closing bracket "]" and newline
+        mvPrintArray.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        mvPrintArray.visitLdcInsn("]");
+        mvPrintArray.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+
+        mvPrintArray.visitInsn(RETURN);
+        mvPrintArray.visitMaxs(5, 3);
+        mvPrintArray.visitEnd();
     }
 
     private void generatePrintMethodForRecord(String recordClassName, RecordTypeNode recordType) {
