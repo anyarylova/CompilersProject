@@ -1,7 +1,10 @@
-routine add(a: integer, b: integer): integer is
-    return a + b;
+var numbers: array[5] integer;
+var i: integer;
+
+for i in [0 .. 4] loop
+    numbers[i] := i * 2;
 end
 
-var result: integer is add(2, 3);
-
-print result;
+for i in [0 .. 4] loop
+    print numbers[i];
+end

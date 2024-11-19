@@ -184,13 +184,30 @@ public class CodeGenerator implements Opcodes {
             TypeNode exprType = getType(assignNode.getExpression());
 
             if (assignNode.getVariable() instanceof IdentifierNode) {
+                // String varName = ((IdentifierNode) assignNode.getVariable()).getName();
+                // TypeNode varType = variableTypes.get(varName);
+                // if (!typeEquals(varType, exprType)) {
+                //     throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to " + typeName(varType));
+                // }
+                // generateExpression(assignNode.getExpression());
+                // storeVariable(varName, varType);
                 String varName = ((IdentifierNode) assignNode.getVariable()).getName();
                 TypeNode varType = variableTypes.get(varName);
-                if (!typeEquals(varType, exprType)) {
+                // TypeNode exprType = getType(assignNode.getExpression());
+
+                if (varType instanceof IntegerTypeNode && exprType instanceof RealTypeNode) {
+                    // Generate code to evaluate the expression
+                    generateExpression(assignNode.getExpression());
+                    // Insert conversion from double to int
+                    mv.visitInsn(D2I);
+                    // Store the integer value
+                    storeVariable(varName, varType);
+                } else if (!typeEquals(varType, exprType)) {
                     throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to " + typeName(varType));
+                } else {
+                    generateExpression(assignNode.getExpression());
+                    storeVariable(varName, varType);
                 }
-                generateExpression(assignNode.getExpression());
-                storeVariable(varName, varType);
             } else if (assignNode.getVariable() instanceof ArrayAccessNode) {
                 ArrayAccessNode arrayAccess = (ArrayAccessNode) assignNode.getVariable();
                 TypeNode elementType = getType(arrayAccess);
@@ -556,6 +573,10 @@ public class CodeGenerator implements Opcodes {
     private boolean typeEquals(TypeNode t1, TypeNode t2) {
         if (t1 == null || t2 == null) {
             return false;
+        }
+        if (t1 instanceof IntegerTypeNode && t2 instanceof RealTypeNode) {
+        // Allow assigning Real to Integer with implicit conversion
+            return true;
         }
         if (t1.getClass().equals(t2.getClass())) {
             if (t1 instanceof ArrayTypeNode && t2 instanceof ArrayTypeNode) {
