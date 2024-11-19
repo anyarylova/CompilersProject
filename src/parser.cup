@@ -99,10 +99,12 @@ SimpleStatement ::= Variable:s1 ASSIGN Expression:expr
                  | RETURN Expression:expr
                    {: RESULT = new ReturnNode(expr); :};
 
-Variable ::= IDENTIFIER:id
-            {: RESULT = new IdentifierNode(id); :}
-          | IDENTIFIER:id LBRACKET Expression:index RBRACKET
-            {: RESULT = new ArrayAccessNode(new IdentifierNode(id), index); :};
+Variable ::= Variable:v DOT IDENTIFIER:id
+            {: RESULT = new FieldAccessNode(v, id); :}
+          | Variable:v LBRACKET Expression:index RBRACKET
+            {: RESULT = new ArrayAccessNode(v, index); :}
+          | IDENTIFIER:id
+            {: RESULT = new IdentifierNode(id); :};
 
 CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenStmt ELSE StatementBlock:elseStmt END
                       {: RESULT = new IfElseNode(cond, thenStmt, elseStmt); :}

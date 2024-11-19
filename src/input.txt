@@ -1,7 +1,12 @@
 var rec : record is 
-	var x: integer;
-	var y: real;
-	var z: boolean;
+    var x: integer;
+    var y: real;
+    var z: boolean;
 end;
 
+rec.x := 42;
+rec.y := 3.14;
+rec.z := true;
+
 print rec;
+

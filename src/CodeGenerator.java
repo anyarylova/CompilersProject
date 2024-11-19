@@ -187,114 +187,120 @@ public class CodeGenerator implements Opcodes {
         }
     }
 
-    private void generateStatement(StatementNode node) {
-        if (node instanceof AssignmentNode) {
-            AssignmentNode assignNode = (AssignmentNode) node;
-            TypeNode exprType = getType(assignNode.getExpression());
+private void generateStatement(StatementNode node) {
+    if (node instanceof AssignmentNode) {
+        AssignmentNode assignNode = (AssignmentNode) node;
+
+        if (assignNode.getVariable() instanceof IdentifierNode) {
+            // Handle variable assignment
             String varName = ((IdentifierNode) assignNode.getVariable()).getName();
             TypeNode varType = variableTypes.get(varName);
+            TypeNode exprType = getType(assignNode.getExpression());
 
-            if (assignNode.getVariable() instanceof IdentifierNode) {
-                // String varName = ((IdentifierNode) assignNode.getVariable()).getName();
-                // TypeNode varType = variableTypes.get(varName);
-                // if (!typeEquals(varType, exprType)) {
-                //     throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to " + typeName(varType));
-                // }
-                // generateExpression(assignNode.getExpression());
-                // storeVariable(varName, varType);
+            if (!typeEquals(varType, exprType)) {
+                throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to variable '" + varName + "' of type " + typeName(varType));
+            }
 
-                // TypeNode exprType = getType(assignNode.getExpression());
+            // Generate code for the expression
+            generateExpression(assignNode.getExpression());
 
-                if (varType instanceof BooleanTypeNode && exprType instanceof IntegerTypeNode) {
-                    // Generate code to evaluate the integer expression
-                    generateExpression(assignNode.getExpression());
-                    Label falseLabel = new Label();
-                    Label endLabel = new Label();
-                    // Convert integer to boolean
-                    mv.visitJumpInsn(IFEQ, falseLabel);
-                    mv.visitInsn(ICONST_1); // True
-                    mv.visitJumpInsn(GOTO, endLabel);
-                    mv.visitLabel(falseLabel);
-                    mv.visitInsn(ICONST_0); // False
-                    mv.visitLabel(endLabel);
-                    // Store the boolean value
-                    storeVariable(varName, varType);
-                } else if (varType instanceof IntegerTypeNode && exprType instanceof RealTypeNode) {
-                    // Generate code to evaluate the expression
-                    generateExpression(assignNode.getExpression());
-                    // Insert conversion from double to int
-                    mv.visitInsn(D2I);
-                    // Store the integer value
-                    storeVariable(varName, varType);
-                } else if (!typeEquals(varType, exprType)) {
-                    throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to " + typeName(varType));
-                } else {
-                    generateExpression(assignNode.getExpression());
-                    storeVariable(varName, varType);
-                }
-            } else if (assignNode.getVariable() instanceof ArrayAccessNode) {
-                ArrayAccessNode arrayAccess = (ArrayAccessNode) assignNode.getVariable();
-                TypeNode elementType = getType(arrayAccess);
+            // Store the value into the variable
+            storeVariable(varName, varType);
 
-                if (!typeEquals(elementType, exprType)) {
-                    throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to array element of type " + typeName(elementType));
-                }
+        } else if (assignNode.getVariable() instanceof ArrayAccessNode) {
+            // Handle array element assignment
+            ArrayAccessNode arrayAccess = (ArrayAccessNode) assignNode.getVariable();
+            TypeNode elementType = getType(arrayAccess);
+            TypeNode exprType = getType(assignNode.getExpression());
 
-                // Load array reference
-                generateExpression(arrayAccess.getArray());
-                // Push index onto the stack
-                generateExpression(arrayAccess.getIndex());
-                // Generate the value to be stored
-                generateExpression(assignNode.getExpression());
-                if (elementType instanceof IntegerTypeNode || elementType instanceof BooleanTypeNode) {
-                    mv.visitInsn(IASTORE); // Store integer or boolean into array
-                } else if (elementType instanceof RealTypeNode) {
-                    mv.visitInsn(DASTORE); // Store double into array
-                }
-            } else if (assignNode.getVariable() instanceof FieldAccessNode) {
-                FieldAccessNode fieldAccess = (FieldAccessNode) assignNode.getVariable();
-                TypeNode fieldType = getFieldType(fieldAccess);
+            if (!typeEquals(elementType, exprType)) {
+                throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to array element of type " + typeName(elementType));
+            }
 
-                if (!typeEquals(fieldType, exprType)) {
-                    throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to field of type " + typeName(fieldType));
-                }
+            // Load array reference
+            generateExpression(arrayAccess.getArray());
 
-                // Generate code to load the record instance
-                generateExpression(fieldAccess.getRecord());
-                // Generate code for the value to be stored
-                generateExpression(assignNode.getExpression());
-                // Store into the field
-                String fieldName = fieldAccess.getFieldName();
-                String recordClassName = getRecordClassName(fieldAccess.getRecord());
-                mv.visitFieldInsn(PUTFIELD, recordClassName, fieldName, getTypeDescriptor(fieldType));
+            // Push index onto the stack
+            generateExpression(arrayAccess.getIndex());
+
+            // Generate the value to be stored
+            generateExpression(assignNode.getExpression());
+
+            // Store the value into the array element
+            if (elementType instanceof IntegerTypeNode || elementType instanceof BooleanTypeNode) {
+                mv.visitInsn(IASTORE); // Store integer or boolean into array
+            } else if (elementType instanceof RealTypeNode) {
+                mv.visitInsn(DASTORE); // Store double into array
             } else {
-                throw new RuntimeException("Unsupported assignment target.");
+                throw new RuntimeException("Unsupported array element type for assignment.");
             }
-        } else if (node instanceof ReturnNode) {
-            generateExpression(((ReturnNode) node).getExpr());
-            TypeNode returnType = getType(((ReturnNode) node).getExpr());
-            if (returnType instanceof IntegerTypeNode || returnType instanceof BooleanTypeNode) {
-                mv.visitInsn(IRETURN);
-            } else if (returnType instanceof RealTypeNode) {
-                mv.visitInsn(DRETURN);
-            } else {
-                mv.visitInsn(RETURN);
+
+        } else if (assignNode.getVariable() instanceof FieldAccessNode) {
+            // Handle record field assignment
+            FieldAccessNode fieldAccess = (FieldAccessNode) assignNode.getVariable();
+            TypeNode fieldType = getFieldType(fieldAccess);
+            TypeNode exprType = getType(assignNode.getExpression());
+
+            if (!typeEquals(fieldType, exprType)) {
+                String varName = getVariableName(fieldAccess);
+                throw new RuntimeException("Type mismatch: Cannot assign " + typeName(exprType) + " to field '" + varName + "' of type " + typeName(fieldType));
             }
-        } else if (node instanceof StatementBlockNode) {
-            for (StatementNode stmt : ((StatementBlockNode) node).getStatements()) {
-                generateStatement(stmt);
-            }
-        } else if (node instanceof IfElseNode) {
-            generateIfElse((IfElseNode) node);
-        } else if (node instanceof WhileLoopNode) {
-            generateWhileLoop((WhileLoopNode) node);
-        } else if (node instanceof ForLoopNode) {
-            generateForLoop((ForLoopNode) node);
-        } else if (node instanceof PrintNode) {
-            generatePrint((PrintNode) node);
+
+            // Generate code to load the record instance
+            generateExpression(fieldAccess.getRecord());
+
+            // Generate code for the value to be stored
+            generateExpression(assignNode.getExpression());
+
+            // Store the value into the field
+            String fieldName = fieldAccess.getFieldName();
+            String recordClassName = getRecordClassName(fieldAccess.getRecord());
+            mv.visitFieldInsn(PUTFIELD, recordClassName, fieldName, getTypeDescriptor(fieldType));
+
+        } else {
+            throw new RuntimeException("Unsupported assignment target.");
         }
+
+    } else if (node instanceof ReturnNode) {
+        // Handle return statement
+        generateExpression(((ReturnNode) node).getExpr());
+        TypeNode returnType = getType(((ReturnNode) node).getExpr());
+        if (returnType instanceof IntegerTypeNode || returnType instanceof BooleanTypeNode) {
+            mv.visitInsn(IRETURN);
+        } else if (returnType instanceof RealTypeNode) {
+            mv.visitInsn(DRETURN);
+        } else {
+            mv.visitInsn(RETURN);
+        }
+
+    } else if (node instanceof StatementBlockNode) {
+        // Handle a block of statements
+        for (StatementNode stmt : ((StatementBlockNode) node).getStatements()) {
+            generateStatement(stmt);
+        }
+
+    } else if (node instanceof IfElseNode) {
+        // Handle if-else statements
+        generateIfElse((IfElseNode) node);
+
+    } else if (node instanceof WhileLoopNode) {
+        // Handle while loops
+        generateWhileLoop((WhileLoopNode) node);
+
+    } else if (node instanceof ForLoopNode) {
+        // Handle for loops
+        generateForLoop((ForLoopNode) node);
+
+    } else if (node instanceof PrintNode) {
+        // Handle print statements
+        generatePrint((PrintNode) node);
+
+    } else {
         // Handle other statement types
+        throw new RuntimeException("Unsupported statement type: " + node.getClass().getSimpleName());
     }
+}
+
 
     private void generateIfElse(IfElseNode node) {
         Label elseLabel = new Label();
@@ -854,4 +860,18 @@ public class CodeGenerator implements Opcodes {
         printMv.visitMaxs(3, 2);
         printMv.visitEnd();
     }
+
+
+private String getVariableName(ExpressionNode variable) {
+    if (variable instanceof IdentifierNode) {
+        return ((IdentifierNode) variable).getName();
+    } else if (variable instanceof FieldAccessNode) {
+        FieldAccessNode fieldAccess = (FieldAccessNode) variable;
+        return getVariableName(fieldAccess.getRecord()) + "." + fieldAccess.getFieldName();
+    } else {
+        return "<unknown variable>";
+    }
 }
+}
+
+

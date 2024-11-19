@@ -280,6 +280,10 @@ class FieldAccessNode extends ExpressionNode {
     public String getFieldName() {
         return fieldName;
     }
+
+    public String toString() {
+        return "FieldAccess(" + record + ", " + fieldName + ")";
+    }
 }
 
 class FunctionCallNode extends ExpressionNode {
