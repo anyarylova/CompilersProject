@@ -1,12 +1,13 @@
-var rec : record is 
-    var x: integer;
-    var y: real;
-    var z: boolean;
-end;
+var numbers: array[5] integer;
+var i: integer;
 
-rec.x := 42;
-rec.y := 3.14;
-rec.z := true;
+for i in [0 .. 4] loop
+    numbers[i] := i * 2;
+end
 
-print rec;
+for i in [0 .. 4] loop
+    print numbers[i];
+end
+
+print numbers;
 
