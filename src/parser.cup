@@ -11,6 +11,8 @@ terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON
 terminal String IDENTIFIER;
 terminal Integer NUMBER;
 terminal Double REAL;
+terminal PRINT;
+
 
 /* Non-terminal definitions */
 non terminal ProgramNode Program;
@@ -85,9 +87,11 @@ StatementBlock ::= StatementBlock:s1 Statement:s2
                  | Statement:s
                  {: RESULT = new StatementBlockNode(new ArrayList<>(Arrays.asList(s))); :};
 
-Statement ::= SimpleStatement:s SEMICOLON
+Statement ::= PRINT Expression:expr SEMICOLON
+            {: RESULT = new PrintNode(expr); :}
+            | SimpleStatement:s SEMICOLON
              {: RESULT = s; :}
-           | CompoundStatement:cs
+            | CompoundStatement:cs
              {: RESULT = cs; :};
 
 SimpleStatement ::= Variable:s1 ASSIGN Expression:expr

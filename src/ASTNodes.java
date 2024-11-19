@@ -507,6 +507,29 @@ class StatementBlockNode extends StatementNode {
     }
 }
 
+interface ASTVisitor {
+    void visit(PrintNode node);
+    // Add visit methods for other node types if needed
+}
+
+
+class PrintNode extends StatementNode {
+    private ExpressionNode expression;
+
+    public PrintNode(ExpressionNode expression) {
+        this.expression = expression;
+    }
+
+    public ExpressionNode getExpression() {
+        return expression;
+    }
+
+    public void accept(ASTVisitor visitor) {
+        visitor.visit(this);
+    }
+}
+
+
 /* Function Node */
 class FunctionNode extends ASTNode {
     private String identifier;

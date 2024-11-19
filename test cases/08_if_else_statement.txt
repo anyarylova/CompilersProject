@@ -4,3 +4,5 @@ if (x > 3) then
 else
   x := 20;
 end
+
+print x;

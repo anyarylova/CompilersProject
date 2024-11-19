@@ -48,6 +48,7 @@ COMMENT     = "//" [^\n]*
 "while"      { System.out.println("WHILE"); return new Symbol(sym.WHILE); }
 "routine"    { System.out.println("ROUTINE"); return new Symbol(sym.ROUTINE); }
 "return"     { System.out.println("RETURN"); return new Symbol(sym.RETURN); }
+"print"      { System.out.println("PRINT"); return new Symbol(sym.PRINT); }
 
 /* Operators */
 "+"          { System.out.println("PLUS"); return new Symbol(sym.PLUS); }

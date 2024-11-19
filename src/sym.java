@@ -49,6 +49,7 @@ public class sym {
   public static final int FALSE = 9;
   public static final int LESS_THAN = 28;
   public static final int VAR = 2;
+  public static final int PRINT = 45;
   public static final int IDENTIFIER = 42;
   public static final int BOOLEAN_TYPE = 4;
   public static final String[] terminalNames = new String[] {
@@ -96,7 +97,8 @@ public class sym {
   "SEMICOLON",
   "IDENTIFIER",
   "NUMBER",
-  "REAL"
+  "REAL",
+  "PRINT"
   };
 public String[] TT;
 	public sym(){
@@ -144,6 +146,7 @@ public String[] TT;
 		TT[9]=new String("FALSE");
 		TT[28]=new String("LESS_THAN");
 		TT[2]=new String("VAR");
+		TT[45]=new String("PRINT");
 		TT[42]=new String("IDENTIFIER");
 		TT[4]=new String("BOOLEAN_TYPE");
 	}
