@@ -13,11 +13,12 @@ import java_cup.runtime.*;
 /* Definitions */
 DIGIT       = [0-9]
 LETTER      = [a-zA-Z]
-IDENTIFIER  = {LETTER}({LETTER}|{DIGIT})*
+IDENTIFIER  = {LETTER}({LETTER}|{DIGIT}|_)*
 NUMBER      = {DIGIT}+
 REAL        = {DIGIT}+ "." {DIGIT}*
 WHITESPACE  = [ \t\n\r]+
 COMMENT     = "//" [^\n]*
+
 
 /* Regular expression rules */
 %%
@@ -59,6 +60,8 @@ COMMENT     = "//" [^\n]*
 "="          { System.out.println("EQUAL"); return new Symbol(sym.EQUAL); }
 ">"          { System.out.println("GREATER_THAN"); return new Symbol(sym.GREATER_THAN); }
 "<"          { System.out.println("LESS_THAN"); return new Symbol(sym.LESS_THAN); }
+"<="         { System.out.println("LESS_THAN_OR_EQUAL"); return new Symbol(sym.LESS_THAN_OR_EQUAL); }
+">="         { System.out.println("GREATER_THAN_OR_EQUAL"); return new Symbol(sym.GREATER_THAN_OR_EQUAL); }
 "and"        { System.out.println("AND"); return new Symbol(sym.AND); }
 "or"         { System.out.println("OR"); return new Symbol(sym.OR); }
 "xor"        { System.out.println("XOR"); return new Symbol(sym.XOR); }

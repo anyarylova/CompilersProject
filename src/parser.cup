@@ -5,9 +5,9 @@ import java.util.*;
 /* Terminal definitions */
 terminal VAR, INTEGER_TYPE, BOOLEAN_TYPE, REAL_TYPE, ARRAY, RECORD, TRUE, FALSE, IS;
 terminal IF, THEN, ELSE, END, FOR, IN, LOOP, WHILE, ROUTINE, RETURN;
-terminal PLUS, MINUS, MULTIPLY, DIVIDE, ASSIGN, EQUAL, GREATER_THAN, LESS_THAN;
+terminal PLUS, MINUS, MULTIPLY, DIVIDE, ASSIGN, EQUAL, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN_OR_EQUAL;
 terminal AND, OR, XOR, NOT;
-terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON;
+terminal LPAREN, RPAREN, LBRACKET, RBRACKET, COMMA, DOT, RANGE, COLON, SEMICOLON, UNDERSCORE;
 terminal String IDENTIFIER;
 terminal Integer NUMBER;
 terminal Double REAL;
@@ -34,7 +34,7 @@ non terminal DeclarationNode Parameter;
 
 /* Precedence rules */
 precedence left OR, AND, XOR;
-precedence left EQUAL, LESS_THAN, GREATER_THAN;
+precedence left EQUAL, LESS_THAN, GREATER_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN_OR_EQUAL;
 precedence left PLUS, MINUS;
 precedence left MULTIPLY, DIVIDE;
 precedence right NOT;
@@ -139,6 +139,10 @@ Expression ::= IDENTIFIER:id LPAREN ExpressionList:args RPAREN
               {: RESULT = new BinaryOpNode(left, right, ">"); :}
             | Expression:left LESS_THAN Expression:right
               {: RESULT = new BinaryOpNode(left, right, "<"); :}
+            | Expression:left GREATER_THAN_OR_EQUAL Expression:right
+              {: RESULT = new BinaryOpNode(new BinaryOpNode(left, right, ">"), new BinaryOpNode(left, right, "=="), "OR"); :}
+            | Expression:left LESS_THAN_OR_EQUAL Expression:right
+              {: RESULT = new BinaryOpNode(new BinaryOpNode(left, right, "<"), new BinaryOpNode(left, right, "=="), "OR"); :}
             | NOT Expression:expr
               {: RESULT = new UnaryOpNode(expr, "NOT"); :}
             | TRUE
@@ -161,10 +165,6 @@ ExpressionList ::= ExpressionList:el COMMA Expression:expr
                  | Expression:expr
                    {: RESULT = new ArrayList<>(Arrays.asList(expr)); :};
 
-// Function ::= ROUTINE IDENTIFIER:id LPAREN DeclarationList:params RPAREN COLON Type:returnType IS StatementBlock:body END
-//              {: RESULT = new FunctionNode(id, params, returnType, body); :}
-//            | ROUTINE IDENTIFIER:id LPAREN RPAREN COLON Type:returnType IS StatementBlock:body END
-//              {: RESULT = new FunctionNode(id, new ArrayList<>(), returnType, body); :};
 Function ::= ROUTINE IDENTIFIER:id LPAREN ParameterList:params RPAREN COLON Type:returnType IS StatementBlock:body END
              {: RESULT = new FunctionNode(id, params, returnType, body); :}
            | ROUTINE IDENTIFIER:id LPAREN RPAREN COLON Type:returnType IS StatementBlock:body END
