@@ -18,5 +18,3 @@ Students[2].Age := 19;
 print Students[0];
 
 
-
-

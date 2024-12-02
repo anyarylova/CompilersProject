@@ -9,51 +9,54 @@ public class sym {
   public static final int DIVIDE = 24;
   public static final int STRING_LITERAL = 47;
   public static final int REAL_TYPE = 5;
-  public static final int LBRACKET = 35;
-  public static final int XOR = 31;
-  public static final int LPAREN = 33;
+  public static final int LBRACKET = 37;
+  public static final int XOR = 33;
+  public static final int LESS_THAN_OR_EQUAL = 29;
+  public static final int LPAREN = 35;
   public static final int ARRAY = 6;
   public static final int FOR = 15;
   public static final int MINUS = 22;
   public static final int GREATER_THAN = 27;
-  public static final int RPAREN = 34;
-  public static final int SEMICOLON = 41;
-  public static final int NOT = 32;
+  public static final int RPAREN = 36;
+  public static final int SEMICOLON = 43;
+  public static final int NOT = 34;
   public static final int IS = 10;
-  public static final int AND = 29;
-  public static final int RANGE = 39;
+  public static final int AND = 31;
+  public static final int RANGE = 41;
   public static final int RECORD = 7;
   public static final int TYPE = 48;
   public static final int IN = 16;
-  public static final int OR = 30;
-  public static final int COMMA = 37;
+  public static final int OR = 32;
+  public static final int COMMA = 39;
   public static final int LOOP = 17;
   public static final int PLUS = 21;
   public static final int MULTIPLY = 23;
   public static final int ASSIGN = 25;
   public static final int IF = 11;
-  public static final int DOT = 38;
+  public static final int DOT = 40;
   public static final int EOF = 0;
   public static final int RETURN = 20;
-  public static final int RBRACKET = 36;
+  public static final int RBRACKET = 38;
   public static final int EQUAL = 26;
   public static final int STRING_TYPE = 46;
   public static final int TRUE = 8;
   public static final int error = 1;
   public static final int ROUTINE = 19;
-  public static final int NUMBER = 43;
+  public static final int NUMBER = 46;
   public static final int INTEGER_TYPE = 3;
-  public static final int REAL = 44;
-  public static final int COLON = 40;
+  public static final int REAL = 47;
+  public static final int COLON = 42;
   public static final int ELSE = 13;
   public static final int WHILE = 18;
   public static final int THEN = 12;
   public static final int END = 14;
+  public static final int UNDERSCORE = 44;
+  public static final int GREATER_THAN_OR_EQUAL = 30;
   public static final int FALSE = 9;
   public static final int LESS_THAN = 28;
   public static final int VAR = 2;
-  public static final int PRINT = 45;
-  public static final int IDENTIFIER = 42;
+  public static final int PRINT = 48;
+  public static final int IDENTIFIER = 45;
   public static final int BOOLEAN_TYPE = 4;
   public static final String[] terminalNames = new String[] {
   "EOF",
@@ -85,6 +88,8 @@ public class sym {
   "EQUAL",
   "GREATER_THAN",
   "LESS_THAN",
+  "LESS_THAN_OR_EQUAL",
+  "GREATER_THAN_OR_EQUAL",
   "AND",
   "OR",
   "XOR",
@@ -98,6 +103,7 @@ public class sym {
   "RANGE",
   "COLON",
   "SEMICOLON",
+  "UNDERSCORE",
   "IDENTIFIER",
   "NUMBER",
   "REAL",
@@ -112,51 +118,54 @@ public String[] TT;
 		TT[24]=new String("DIVIDE");
 		TT[47]=new String("STRING_LITERAL");
 		TT[5]=new String("REAL_TYPE");
-		TT[35]=new String("LBRACKET");
-		TT[31]=new String("XOR");
-		TT[33]=new String("LPAREN");
+		TT[37]=new String("LBRACKET");
+		TT[33]=new String("XOR");
+		TT[29]=new String("LESS_THAN_OR_EQUAL");
+		TT[35]=new String("LPAREN");
 		TT[6]=new String("ARRAY");
 		TT[15]=new String("FOR");
 		TT[22]=new String("MINUS");
 		TT[27]=new String("GREATER_THAN");
-		TT[34]=new String("RPAREN");
-		TT[41]=new String("SEMICOLON");
-		TT[32]=new String("NOT");
+		TT[36]=new String("RPAREN");
+		TT[43]=new String("SEMICOLON");
+		TT[34]=new String("NOT");
 		TT[10]=new String("IS");
-		TT[29]=new String("AND");
-		TT[39]=new String("RANGE");
+		TT[31]=new String("AND");
+		TT[41]=new String("RANGE");
 		TT[7]=new String("RECORD");
 		TT[48]=new String("TYPE");
 		TT[16]=new String("IN");
-		TT[30]=new String("OR");
-		TT[37]=new String("COMMA");
+		TT[32]=new String("OR");
+		TT[39]=new String("COMMA");
 		TT[17]=new String("LOOP");
 		TT[21]=new String("PLUS");
 		TT[23]=new String("MULTIPLY");
 		TT[25]=new String("ASSIGN");
 		TT[11]=new String("IF");
-		TT[38]=new String("DOT");
+		TT[40]=new String("DOT");
 		TT[0]=new String("EOF");
 		TT[20]=new String("RETURN");
-		TT[36]=new String("RBRACKET");
+		TT[38]=new String("RBRACKET");
 		TT[26]=new String("EQUAL");
 		TT[46]=new String("STRING_TYPE");
 		TT[8]=new String("TRUE");
 		TT[1]=new String("error");
 		TT[19]=new String("ROUTINE");
-		TT[43]=new String("NUMBER");
+		TT[46]=new String("NUMBER");
 		TT[3]=new String("INTEGER_TYPE");
-		TT[44]=new String("REAL");
-		TT[40]=new String("COLON");
+		TT[47]=new String("REAL");
+		TT[42]=new String("COLON");
 		TT[13]=new String("ELSE");
 		TT[18]=new String("WHILE");
 		TT[12]=new String("THEN");
 		TT[14]=new String("END");
+		TT[44]=new String("UNDERSCORE");
+		TT[30]=new String("GREATER_THAN_OR_EQUAL");
 		TT[9]=new String("FALSE");
 		TT[28]=new String("LESS_THAN");
 		TT[2]=new String("VAR");
-		TT[45]=new String("PRINT");
-		TT[42]=new String("IDENTIFIER");
+		TT[48]=new String("PRINT");
+		TT[45]=new String("IDENTIFIER");
 		TT[4]=new String("BOOLEAN_TYPE");
 	}
 public String getTT(int i){return TT[i];}
