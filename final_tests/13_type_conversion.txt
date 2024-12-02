@@ -1,0 +1,5 @@
+var x: boolean is false;
+x := 1; // Should assign true
+
+var x: integer is 6 / 2;
+x := 2.002; // Should assign 2

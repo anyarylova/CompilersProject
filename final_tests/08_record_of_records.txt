@@ -1,0 +1,27 @@
+var milk : record is
+  var milkPrice: real is 79.99;
+  var milkDiscount: integer is 10;
+  var milkSale: boolean is true;
+end;
+
+var bread : record is
+  var breadPrice: real is 35.99;
+  var breadDiscount: integer is 15;
+  var breadSale: boolean is false;
+end;
+
+var butter : record is
+  var butterPrice: real is 154.99;
+  var butterDiscount: integer is 5;
+  var butterSale: boolean is true;
+end;
+
+var shop : record is 
+  var milkProduct: record is milk;
+  var breadProduct: record is bread;
+  var butterProduct: record is butter;
+end;
+
+print shop.milkProduct.milkPrice;
+print shop.breadProduct.breadDiscount;
+print shop.butterProduct.butterSale;

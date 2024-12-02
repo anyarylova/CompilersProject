@@ -1,7 +1,6 @@
 /* parser.cup - Grammar specification for the custom language with AST support */
 import java_cup.runtime.*;
 import java.util.*;
-
 /* Terminal definitions */
 terminal VAR, INTEGER_TYPE, BOOLEAN_TYPE, REAL_TYPE, ARRAY, RECORD, TRUE, FALSE, IS;
 terminal IF, THEN, ELSE, END, FOR, IN, LOOP, WHILE, ROUTINE, RETURN;
@@ -12,7 +11,9 @@ terminal String IDENTIFIER;
 terminal Integer NUMBER;
 terminal Double REAL;
 terminal PRINT;
-
+terminal STRING_TYPE;
+terminal String STRING_LITERAL;
+terminal TYPE;
 
 /* Non-terminal definitions */
 non terminal ProgramNode Program;
@@ -31,6 +32,11 @@ non terminal ExpressionNode Variable;
 non terminal List<DeclarationNode> DeclarationList; 
 non terminal List<DeclarationNode> ParameterList;
 non terminal DeclarationNode Parameter;
+non terminal TypeDeclarationListNode TypeDeclaration;
+non terminal TypeDeclarationNode TypeDeclarationItem;
+non terminal TypeDeclarationListNode TypeDeclarationList;
+non terminal TypeNode TypeDefinition;
+non terminal StringNode StringLiteral;
 
 /* Precedence rules */
 precedence left OR, AND, XOR;
@@ -48,23 +54,49 @@ ProgramElements ::= ProgramElements:e1 ProgramElement:e2
                   | ProgramElement:e
                   {: RESULT = new ArrayList<>(Arrays.asList(e)); :};
 
-ProgramElement ::= Declaration:d SEMICOLON
-                  {: RESULT = d; :}
-                | Statement:s
-                  {: RESULT = s; :}
-                | Function:f
-                  {: RESULT = f; :};
+ProgramElement ::= TypeDeclaration:td
+                   {: RESULT = td; :}
+                 | Declaration:d SEMICOLON
+                   {: RESULT = d; :}
+                 | Statement:s
+                   {: RESULT = s; :}
+                 | Function:f
+                   {: RESULT = f; :};
 
-Type ::= INTEGER_TYPE
+Type ::= IDENTIFIER:id
+        {: RESULT = new TypeIdentifierNode(id); :}
+      | INTEGER_TYPE
         {: RESULT = new IntegerTypeNode(); :}
       | BOOLEAN_TYPE
         {: RESULT = new BooleanTypeNode(); :}
       | REAL_TYPE
         {: RESULT = new RealTypeNode(); :}
+      | STRING_TYPE
+        {: RESULT = new StringTypeNode(); :}
       | ARRAY LBRACKET NUMBER:size RBRACKET Type:elementType
         {: RESULT = new ArrayTypeNode(size, elementType); :}
-      | RECORD IS DeclarationList:fields END
+      | RECORD DeclarationList:fields END
         {: RESULT = new RecordTypeNode(fields); :};
+
+
+/* Define TypeDefinition */
+TypeDefinition ::= RECORD DeclarationList:fields END
+                   {: RESULT = new RecordTypeNode(fields); :}
+                 | IDENTIFIER:id
+                   {: RESULT = new TypeIdentifierNode(id); :}
+                 | INTEGER_TYPE
+                   {: RESULT = new IntegerTypeNode(); :}
+                 | BOOLEAN_TYPE
+                   {: RESULT = new BooleanTypeNode(); :}
+                 | REAL_TYPE
+                   {: RESULT = new RealTypeNode(); :}
+                 | STRING_TYPE
+                   {: RESULT = new StringTypeNode(); :}
+                 | ARRAY LBRACKET NUMBER:size RBRACKET TypeDefinition:elementType
+                   {: RESULT = new ArrayTypeNode(size, elementType); :};
+
+
+
 
 Declaration ::= VAR IDENTIFIER:id COLON Type:type IS Expression:expr
                {: RESULT = new DeclarationNode(id, type, expr); :}
@@ -115,7 +147,9 @@ CompoundStatement ::= IF LPAREN Expression:cond RPAREN THEN StatementBlock:thenS
                     | FOR IDENTIFIER:id IN LBRACKET Expression:start RANGE Expression:end RBRACKET LOOP StatementBlock:body END
                       {: RESULT = new ForLoopNode(new IdentifierNode(id), start, end, body); :};
 
-Expression ::= IDENTIFIER:id LPAREN ExpressionList:args RPAREN
+Expression ::= STRING_LITERAL:str
+               {: RESULT = new StringNode(str); :}            
+            | IDENTIFIER:id LPAREN ExpressionList:args RPAREN
               {: RESULT = new FunctionCallNode(id, args); :}
             | IDENTIFIER:id LPAREN RPAREN
               {: RESULT = new FunctionCallNode(id, new ArrayList<>()); :}
@@ -178,3 +212,16 @@ ParameterList ::= ParameterList:plist COMMA Parameter:param
 
 Parameter ::= IDENTIFIER:id COLON Type:type
              {: RESULT = new DeclarationNode(id, type, null); :};
+
+
+TypeDeclaration ::= TYPE TypeDeclarationList:tdList
+                    {: RESULT = tdList; :};
+
+TypeDeclarationList ::= TypeDeclarationList:tds TypeDeclarationItem:td
+                        {: tds.getTypeDeclarations().add(td); RESULT = tds; :}
+                      | TypeDeclarationItem:td
+                        {: RESULT = new TypeDeclarationListNode(new ArrayList<>(Arrays.asList(td))); :};
+
+TypeDeclarationItem ::= IDENTIFIER:id IS TypeDefinition:typeDef SEMICOLON
+                        {: RESULT = new TypeDeclarationNode(id, typeDef); :};
+

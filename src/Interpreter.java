@@ -4,10 +4,12 @@ import java.util.Map;
 
 class Environment {
     private Map<String, Object> variables;
+    private Map<String, TypeNode> types; 
     private Environment parent;
 
     public Environment(Environment parent) {
         this.variables = new HashMap<>();
+        this.types = new HashMap<>();
         this.parent = parent;
     }
 
@@ -37,6 +39,22 @@ class Environment {
             throw new RuntimeException("Undefined variable: " + name);
         }
     }
+
+    // Define a type in the current scope
+    public void defineType(String name, TypeNode typeNode) {
+        types.put(name, typeNode);
+    }
+
+    // Get a type from the current scope or parent scopes
+    public TypeNode getType(String name) {
+        if (types.containsKey(name)) {
+            return types.get(name);
+        } else if (parent != null) {
+            return parent.getType(name);
+        } else {
+            throw new RuntimeException("Undefined type: " + name);
+        }
+    }
 }
 
 class Interpreter {
@@ -49,7 +67,12 @@ class Interpreter {
 
     // Function to interpret a ProgramNode
     public void interpret(ProgramNode program) {
-        // Handle all declarations and function definitions
+        // Handle type declarations
+        for (TypeDeclarationNode typeDecl : program.getTypeDeclarations()) {
+            executeTypeDeclaration(typeDecl, globalEnv);
+        }
+
+        // Handle declarations and function definitions
         for (ASTNode node : program.getChildren()) {
             if (node instanceof DeclarationNode) {
                 executeDeclaration((DeclarationNode) node, globalEnv);
@@ -65,6 +88,11 @@ class Interpreter {
             }
         }
     }
+
+    private void executeTypeDeclaration(TypeDeclarationNode node, Environment env) {
+        env.defineType(node.getIdentifier(), node.getTypeDefinition());
+    }
+
 
     // Evaluate an expression and return the result
     private Object evaluate(ExpressionNode expr, Environment env) {
@@ -87,6 +115,8 @@ class Interpreter {
             return evaluateFunctionCall((FunctionCallNode) expr, env);
         } else if (expr instanceof FieldAccessNode) {
             return evaluateFieldAccess((FieldAccessNode) expr, env);
+        } else if (expr instanceof StringNode) {
+            return ((StringNode) expr).getValue();
         }
         throw new RuntimeException("Unknown expression: " + expr);
     }
@@ -352,38 +382,56 @@ class Interpreter {
     }
 
     // Variable declaration execution
-    private void executeDeclaration(DeclarationNode node, Environment env) {
-        String name = node.getIdentifier();
-        Object value = null;
+private void executeDeclaration(DeclarationNode node, Environment env) {
+    String name = node.getIdentifier();
+    TypeNode type = node.getType(); 
 
-        if (node.getType() instanceof RecordTypeNode) {
-            Map<String, Object> record = new HashMap<>();
-            RecordTypeNode recordType = (RecordTypeNode) node.getType();
+    // Resolve type identifiers
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = env.getType(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
+        }
+    }
 
-            for (DeclarationNode field : recordType.getFields()) {
-                Object fieldValue = getDefaultValue(field.getType());
-                record.put(field.getIdentifier(), fieldValue);
-            }
-            value = record;
-        } else if (node.getType() instanceof ArrayTypeNode) {
-            ArrayTypeNode arrayType = (ArrayTypeNode) node.getType();
-            int size = arrayType.getSize();
-            Object[] array = new Object[size];
+    Object value = null;
 
-            // Initialize array elements with default values
-            for (int i = 0; i < size; i++) {
-                array[i] = getDefaultValue(arrayType.getElementType());
-            }
+    if (type instanceof RecordTypeNode) {
+        Map<String, Object> record = new HashMap<>();
+        RecordTypeNode recordType = (RecordTypeNode) type;
 
-            value = array;
-        } else if (node.getExpression() != null) {
-            value = evaluate(node.getExpression(), env);
-        } else {
-            value = getDefaultValue(node.getType());
+        for (DeclarationNode field : recordType.getFields()) {
+            Object fieldValue = getDefaultValue(field.getType());
+            record.put(field.getIdentifier(), fieldValue);
+        }
+        value = record;
+    } else if (type instanceof ArrayTypeNode) {
+        ArrayTypeNode arrayType = (ArrayTypeNode) type;
+        int size = arrayType.getSize();
+        Object[] array = new Object[size];
+
+        // Initialize array elements with default values
+        for (int i = 0; i < size; i++) {
+            array[i] = getDefaultValue(arrayType.getElementType());
         }
 
-        env.define(name, value);
+        value = array;
+    } else if (type instanceof StringTypeNode) {
+        if (node.getExpression() != null) {
+            value = evaluate(node.getExpression(), env);
+        } else {
+            value = "";
+        }
+    } else if (node.getExpression() != null) {
+        value = evaluate(node.getExpression(), env);
+    } else {
+        value = getDefaultValue(type);
     }
+
+    env.define(name, value);
+}
+
 
     // Function declaration execution
     private void executeFunctionDeclaration(FunctionNode node, Environment env) {
@@ -422,6 +470,7 @@ class Interpreter {
 
         return record.get(node.getFieldName());
     }
+
 
     // Function call evaluation
     private Object evaluateFunctionCall(FunctionCallNode node, Environment env) {
@@ -464,31 +513,42 @@ class Interpreter {
     }
 
     // Helper method to get default value based on type
-    private Object getDefaultValue(TypeNode type) {
-        if (type instanceof IntegerTypeNode) {
-            return 0;
-        } else if (type instanceof RealTypeNode) {
-            return 0.0;
-        } else if (type instanceof BooleanTypeNode) {
-            return false;
-        } else if (type instanceof ArrayTypeNode) {
-            ArrayTypeNode arrayType = (ArrayTypeNode) type;
-            int size = arrayType.getSize();
-            Object[] array = new Object[size];
-            for (int i = 0; i < size; i++) {
-                array[i] = getDefaultValue(arrayType.getElementType());
-            }
-            return array;
-        } else if (type instanceof RecordTypeNode) {
-            Map<String, Object> record = new HashMap<>();
-            RecordTypeNode recordType = (RecordTypeNode) type;
-            for (DeclarationNode field : recordType.getFields()) {
-                record.put(field.getIdentifier(), getDefaultValue(field.getType()));
-            }
-            return record;
+private Object getDefaultValue(TypeNode type) {
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = globalEnv.getType(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
         }
-        return null;
     }
+
+    if (type instanceof IntegerTypeNode) {
+        return 0;
+    } else if (type instanceof RealTypeNode) {
+        return 0.0;
+    } else if (type instanceof BooleanTypeNode) {
+        return false;
+    } else if (type instanceof StringTypeNode) {
+        return "";
+    } else if (type instanceof ArrayTypeNode) {
+        ArrayTypeNode arrayType = (ArrayTypeNode) type;
+        int size = arrayType.getSize();
+        Object[] array = new Object[size];
+        for (int i = 0; i < size; i++) {
+            array[i] = getDefaultValue(arrayType.getElementType());
+        }
+        return array;
+    } else if (type instanceof RecordTypeNode) {
+        Map<String, Object> record = new HashMap<>();
+        RecordTypeNode recordType = (RecordTypeNode) type;
+        for (DeclarationNode field : recordType.getFields()) {
+            record.put(field.getIdentifier(), getDefaultValue(field.getType()));
+        }
+        return record;
+    }
+    return null;
+}
+
 }
 
 // Exception to handle return statements

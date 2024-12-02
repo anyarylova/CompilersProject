@@ -1,0 +1,14 @@
+var arr : array [3] integer is [1, 2, 3];
+
+routine modifyArray(a : array [3] integer): array [3] integer is
+  a[0] := a[0] * 2;
+  a[1] := a[1] + 5;
+  a[2] := a[2] - 1;
+  return a;
+end
+
+var result: array [3] integer is modifyArray(arr);
+
+print result[0];
+print result[1];
+print result[2];

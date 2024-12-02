@@ -1,0 +1,6 @@
+var x: integer is 0;
+while (x < 5) loop
+  x := x + 1;
+end
+
+print x;

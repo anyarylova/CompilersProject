@@ -16,6 +16,8 @@ public class CodeGenerator implements Opcodes {
     private Map<RecordTypeNode, String> recordTypeClasses;
     private int recordClassCounter = 0;
     private int labelCounter = 0;
+    private Map<String, TypeNode> typeTable;
+
 
     public CodeGenerator() {
         cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -23,18 +25,27 @@ public class CodeGenerator implements Opcodes {
         variableTypes = new HashMap<>();
         functionTable = new HashMap<>();
         recordTypeClasses = new HashMap<>();
+        typeTable = new HashMap<>();
     }
 
     public void generateCode(ProgramNode ast) throws IOException {
         // Define the class
         cw.visit(V1_8, ACC_PUBLIC, className, null, "java/lang/Object", null);
 
+        // Process type declarations
+        for (TypeDeclarationNode typeDecl : ast.getTypeDeclarations()) {
+            String typeName = typeDecl.getIdentifier();
+            TypeNode typeDef = typeDecl.getTypeDefinition();
+            typeTable.put(typeName, typeDef);
+        }
+
         // Generate built-in print methods
         generatePrintIntMethod();
         generatePrintRealMethod();
-        generatePrintIntArrayMethod();    // Added
-        generatePrintRealArrayMethod();   // Added
-        generatePrintObjectArrayMethod(); // Added
+        generatePrintStringMethod();
+        generatePrintIntArrayMethod();
+        generatePrintRealArrayMethod();
+        generatePrintObjectArrayMethod();
 
         // Generate code for functions first
         for (ASTNode node : ast.getChildren()) {
@@ -80,6 +91,7 @@ public class CodeGenerator implements Opcodes {
 
         System.out.println("Bytecode generation completed. Class file written to " + className + ".class");
     }
+
 
     private void generateFunction(FunctionNode node) {
         // Reset local variable index for the function
@@ -135,57 +147,82 @@ public class CodeGenerator implements Opcodes {
         return descriptor.toString();
     }
 
-    private String getTypeDescriptor(TypeNode type) {
-        if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
-            return "I";
-        } else if (type instanceof RealTypeNode) {
-            return "D";
-        } else if (type instanceof ArrayTypeNode) {
-            ArrayTypeNode arrayType = (ArrayTypeNode) type;
-            String elementTypeDescriptor = getTypeDescriptor(arrayType.getElementType());
-            return "[" + elementTypeDescriptor;
-        } else if (type instanceof RecordTypeNode) {
-            String recordClassName = getRecordClassNameFromType((RecordTypeNode) type);
-            return "L" + recordClassName + ";";
+private String getTypeDescriptor(TypeNode type) {
+    // Resolve type identifiers
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = typeTable.get(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
         }
-        return "V"; // Void
     }
 
+    if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
+        return "I";
+    } else if (type instanceof RealTypeNode) {
+        return "D";
+    } else if (type instanceof StringTypeNode) {
+        return "Ljava/lang/String;";
+    } else if (type instanceof ArrayTypeNode) {
+        ArrayTypeNode arrayType = (ArrayTypeNode) type;
+        String elementTypeDescriptor = getTypeDescriptor(arrayType.getElementType());
+        return "[" + elementTypeDescriptor;
+    } else if (type instanceof RecordTypeNode) {
+        String recordClassName = getRecordClassNameFromType((RecordTypeNode) type);
+        return "L" + recordClassName + ";";
+    }
+    return "V"; // Void
+}
 
-    private void generateDeclaration(DeclarationNode node) {
-        String varName = node.getIdentifier();
-        TypeNode type = node.getType();
-        variableIndex.put(varName, currentLocalVarIndex);
-        variableTypes.put(varName, type);
-        currentLocalVarIndex += getLocalVariableSize(type);
 
-        if (type instanceof ArrayTypeNode) {
-            ArrayTypeNode arrayType = (ArrayTypeNode) type;
-            int size = arrayType.getSize();
-            mv.visitIntInsn(BIPUSH, size); // Push array size onto the stack
-            mv.visitIntInsn(NEWARRAY, getArrayTypeCode(arrayType.getElementType()));
-            storeVariable(varName, type);
-        } else if (type instanceof RecordTypeNode) {
-            String recordClassName = getRecordClassNameFromType((RecordTypeNode) type);
-            mv.visitTypeInsn(NEW, recordClassName);
-            mv.visitInsn(DUP);
-            mv.visitMethodInsn(INVOKESPECIAL, recordClassName, "<init>", "()V", false);
+
+private void generateDeclaration(DeclarationNode node) {
+    String varName = node.getIdentifier();
+    TypeNode type = node.getType();
+
+    // Resolve type identifiers
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = typeTable.get(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
+        }
+    }
+
+    variableIndex.put(varName, currentLocalVarIndex);
+    variableTypes.put(varName, type);
+    currentLocalVarIndex += getLocalVariableSize(type);
+
+    if (type instanceof ArrayTypeNode) {
+        ArrayTypeNode arrayType = (ArrayTypeNode) type;
+        int size = arrayType.getSize();
+        mv.visitIntInsn(BIPUSH, size);
+        mv.visitIntInsn(NEWARRAY, getArrayTypeCode(arrayType.getElementType()));
+        storeVariable(varName, type);
+    } else if (type instanceof RecordTypeNode) {
+        String recordClassName = getRecordClassNameFromType((RecordTypeNode) type);
+        mv.visitTypeInsn(NEW, recordClassName);
+        mv.visitInsn(DUP);
+        mv.visitMethodInsn(INVOKESPECIAL, recordClassName, "<init>", "()V", false);
+        storeVariable(varName, type);
+    } else {
+        if (node.getExpression() != null) {
+            generateExpression(node.getExpression());
             storeVariable(varName, type);
         } else {
-            if (node.getExpression() != null) {
-                generateExpression(node.getExpression());
-                storeVariable(varName, type);
-            } else {
-                // Initialize with default value
-                if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
-                    mv.visitInsn(ICONST_0);
-                } else if (type instanceof RealTypeNode) {
-                    mv.visitInsn(DCONST_0);
-                }
-                storeVariable(varName, type);
+            // Initialize with default value
+            if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
+                mv.visitInsn(ICONST_0);
+            } else if (type instanceof RealTypeNode) {
+                mv.visitInsn(DCONST_0);
+            } else if (type instanceof StringTypeNode) {
+                mv.visitLdcInsn("");
             }
+            storeVariable(varName, type);
         }
     }
+}
+
 
 private void generateStatement(StatementNode node) {
     if (node instanceof AssignmentNode) {
@@ -369,7 +406,10 @@ private void generateStatement(StatementNode node) {
 
     private void generatePrint(PrintNode node) {
         TypeNode exprType = getType(node.getExpression());
-        if (exprType instanceof IntegerTypeNode || exprType instanceof BooleanTypeNode) {
+        if (exprType instanceof StringTypeNode) {
+            generateExpression(node.getExpression());
+            mv.visitMethodInsn(INVOKESTATIC, className, "printString", "(Ljava/lang/String;)V", false);
+        } else if (exprType instanceof IntegerTypeNode || exprType instanceof BooleanTypeNode) {
             generateExpression(node.getExpression());
             mv.visitMethodInsn(INVOKESTATIC, className, "printInt", "(I)V", false);
         } else if (exprType instanceof RealTypeNode) {
@@ -397,6 +437,18 @@ private void generateStatement(StatementNode node) {
         } else {
             throw new RuntimeException("Unsupported type for print statement.");
         }
+    }
+
+
+    private void generatePrintStringMethod() {
+        MethodVisitor printMv = cw.visitMethod(ACC_PUBLIC + ACC_STATIC, "printString", "(Ljava/lang/String;)V", null, null);
+        printMv.visitCode();
+        printMv.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        printMv.visitVarInsn(ALOAD, 0);
+        printMv.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/String;)V", false);
+        printMv.visitInsn(RETURN);
+        printMv.visitMaxs(2, 1);
+        printMv.visitEnd();
     }
 
     private void generatePrintIntArrayMethod() {
@@ -659,6 +711,8 @@ private void generateStatement(StatementNode node) {
                 mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(I)V", false);
             } else if (fieldType instanceof RealTypeNode) {
                 mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(D)V", false);
+            } else if (fieldType instanceof StringTypeNode) {
+                mvPrint.visitMethodInsn(INVOKEVIRTUAL, "java/io/PrintStream", "print", "(Ljava/lang/String;)V", false);
             } else if (fieldType instanceof RecordTypeNode) {
                 // Recursive call to print nested records
                 String nestedRecordClassName = getRecordClassNameFromType((RecordTypeNode) fieldType);
@@ -688,7 +742,10 @@ private void generateStatement(StatementNode node) {
 
 
     private void generateExpression(ExpressionNode node) {
-        if (node instanceof NumberNode) {
+        if (node instanceof StringNode) {
+            String value = ((StringNode) node).getValue();
+            mv.visitLdcInsn(value);
+        } else if (node instanceof NumberNode) {
             int value = ((NumberNode) node).getValue();
             mv.visitLdcInsn(value);
         } else if (node instanceof RealNode) {
@@ -838,28 +895,37 @@ private void generateStatement(StatementNode node) {
         mv.visitMethodInsn(INVOKESTATIC, className, funcName, methodDescriptor, false);
     }
 
-    private void storeVariable(String varName, TypeNode type) {
-        Integer index = variableIndex.get(varName);
-        if (index == null) {
-            throw new RuntimeException("Variable '" + varName + "' is not declared.");
-        }
-        if (type instanceof ArrayTypeNode || type instanceof RecordTypeNode) {
-            mv.visitVarInsn(ASTORE, index);
-        } else if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
-            mv.visitVarInsn(ISTORE, index);
-        } else if (type instanceof RealTypeNode) {
-            mv.visitVarInsn(DSTORE, index);
-        } else {
-            throw new RuntimeException("Unsupported type for storing variable.");
+private void storeVariable(String varName, TypeNode type) {
+    Integer index = variableIndex.get(varName);
+    if (index == null) {
+        throw new RuntimeException("Variable '" + varName + "' is not declared.");
+    }
+    // Resolve type identifiers
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = typeTable.get(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
         }
     }
+    if (type instanceof StringTypeNode || type instanceof ArrayTypeNode || type instanceof RecordTypeNode) {
+        mv.visitVarInsn(ASTORE, index);
+    } else if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
+        mv.visitVarInsn(ISTORE, index);
+    } else if (type instanceof RealTypeNode) {
+        mv.visitVarInsn(DSTORE, index);
+    } else {
+        throw new RuntimeException("Unsupported type for storing variable.");
+    }
+}
+
 
     private void loadVariable(String varName, TypeNode type) {
         Integer index = variableIndex.get(varName);
         if (index == null) {
             throw new RuntimeException("Variable '" + varName + "' is not declared.");
         }
-        if (type instanceof ArrayTypeNode || type instanceof RecordTypeNode) {
+        if (type instanceof StringTypeNode || type instanceof ArrayTypeNode || type instanceof RecordTypeNode) {
             mv.visitVarInsn(ALOAD, index);
         } else if (type instanceof IntegerTypeNode || type instanceof BooleanTypeNode) {
             mv.visitVarInsn(ILOAD, index);
@@ -870,43 +936,64 @@ private void generateStatement(StatementNode node) {
         }
     }
 
-    private TypeNode getType(ExpressionNode expr) {
-        if (expr instanceof NumberNode) {
-            return new IntegerTypeNode();
-        } else if (expr instanceof RealNode) {
-            return new RealTypeNode();
-        } else if (expr instanceof BooleanNode) {
-            return new BooleanTypeNode();
-        } else if (expr instanceof IdentifierNode) {
-            String varName = ((IdentifierNode) expr).getName();
-            TypeNode type = variableTypes.get(varName);
-            if (type == null) {
-                throw new RuntimeException("Variable '" + varName + "' is not declared.");
-            }
-            return type;
-        } else if (expr instanceof BinaryOpNode) {
-            return getType(((BinaryOpNode) expr).getLeft());
-        } else if (expr instanceof UnaryOpNode) {
-            return getType(((UnaryOpNode) expr).getExpr());
-        } else if (expr instanceof FunctionCallNode) {
-            FunctionNode func = functionTable.get(((FunctionCallNode) expr).getFunctionName());
-            if (func == null) {
-                throw new RuntimeException("Function '" + ((FunctionCallNode) expr).getFunctionName() + "' not declared.");
-            }
-            return func.getReturnType();
-        } else if (expr instanceof ArrayAccessNode) {
-            TypeNode arrayType = getType(((ArrayAccessNode) expr).getArray());
-            if (arrayType instanceof ArrayTypeNode) {
-                return ((ArrayTypeNode) arrayType).getElementType();
-            } else {
-                throw new RuntimeException("Type Error: Attempting to index a non-array type.");
-            }
-        } else if (expr instanceof FieldAccessNode) {
-            return getFieldType((FieldAccessNode) expr);
-        } else {
-            throw new RuntimeException("Unsupported expression type in getType.");
+
+ private TypeNode getType(ExpressionNode expr) {
+    if (expr instanceof NumberNode) {
+        return new IntegerTypeNode();
+    } else if (expr instanceof RealNode) {
+        return new RealTypeNode();
+    } else if (expr instanceof BooleanNode) {
+        return new BooleanTypeNode();
+    } else if (expr instanceof StringNode) {
+        return new StringTypeNode();
+    } else if (expr instanceof IdentifierNode) {
+        String varName = ((IdentifierNode) expr).getName();
+        TypeNode type = variableTypes.get(varName);
+        if (type == null) {
+            throw new RuntimeException("Variable '" + varName + "' is not declared.");
         }
+        // Resolve type identifiers
+        if (type instanceof TypeIdentifierNode) {
+            String typeName = ((TypeIdentifierNode) type).getTypeName();
+            type = typeTable.get(typeName);
+            if (type == null) {
+                throw new RuntimeException("Undefined type: " + typeName);
+            }
+        }
+        return type;
+    } else if (expr instanceof BinaryOpNode) {
+        return getType(((BinaryOpNode) expr).getLeft());
+    } else if (expr instanceof UnaryOpNode) {
+        return getType(((UnaryOpNode) expr).getExpr());
+    } else if (expr instanceof FunctionCallNode) {
+        FunctionNode func = functionTable.get(((FunctionCallNode) expr).getFunctionName());
+        if (func == null) {
+            throw new RuntimeException("Function '" + ((FunctionCallNode) expr).getFunctionName() + "' not declared.");
+        }
+        TypeNode returnType = func.getReturnType();
+        // Resolve type identifiers in return type
+        if (returnType instanceof TypeIdentifierNode) {
+            String typeName = ((TypeIdentifierNode) returnType).getTypeName();
+            returnType = typeTable.get(typeName);
+            if (returnType == null) {
+                throw new RuntimeException("Undefined type: " + typeName);
+            }
+        }
+        return returnType;
+    } else if (expr instanceof ArrayAccessNode) {
+        TypeNode arrayType = getType(((ArrayAccessNode) expr).getArray());
+        if (arrayType instanceof ArrayTypeNode) {
+            return ((ArrayTypeNode) arrayType).getElementType();
+        } else {
+            throw new RuntimeException("Type Error: Attempting to index a non-array type.");
+        }
+    } else if (expr instanceof FieldAccessNode) {
+        return getFieldType((FieldAccessNode) expr);
+    } else {
+        throw new RuntimeException("Unsupported expression type in getType.");
     }
+}
+
 
     private boolean typeEquals(TypeNode t1, TypeNode t2) {
         if (t1 == null || t2 == null) {
@@ -1050,28 +1137,61 @@ private void generateStatement(StatementNode node) {
         throw new RuntimeException("Type Error: Expected a record type.");
     }
 
-    private String getRecordClassNameFromType(RecordTypeNode recordType) {
-        String className = recordTypeClasses.get(recordType);
-        if (className == null) {
-            className = generateRecordClass(recordType);
+private String getRecordClassNameFromType(TypeNode type) {
+    // Resolve type identifiers
+    if (type instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) type).getTypeName();
+        type = typeTable.get(typeName);
+        if (type == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
         }
-        return className;
     }
 
-    private TypeNode getFieldType(FieldAccessNode fieldAccess) {
-        TypeNode recordType = getType(fieldAccess.getRecord());
-        if (recordType instanceof RecordTypeNode) {
-            RecordTypeNode recType = (RecordTypeNode) recordType;
-            for (DeclarationNode field : recType.getFields()) {
-                if (field.getIdentifier().equals(fieldAccess.getFieldName())) {
-                    return field.getType();
-                }
-            }
-            throw new RuntimeException("Field '" + fieldAccess.getFieldName() + "' not found in record.");
-        } else {
-            throw new RuntimeException("Type Error: Attempting to access field of non-record type.");
+    if (type instanceof RecordTypeNode) {
+        String className = recordTypeClasses.get(type);
+        if (className == null) {
+            className = generateRecordClass((RecordTypeNode) type);
+        }
+        return className;
+    } else {
+        throw new RuntimeException("Type Error: Expected a record type.");
+    }
+}
+
+
+private TypeNode getFieldType(FieldAccessNode fieldAccess) {
+    TypeNode recordType = getType(fieldAccess.getRecord());
+    // Resolve type identifiers
+    if (recordType instanceof TypeIdentifierNode) {
+        String typeName = ((TypeIdentifierNode) recordType).getTypeName();
+        recordType = typeTable.get(typeName);
+        if (recordType == null) {
+            throw new RuntimeException("Undefined type: " + typeName);
         }
     }
+
+    if (recordType instanceof RecordTypeNode) {
+        RecordTypeNode recType = (RecordTypeNode) recordType;
+        for (DeclarationNode field : recType.getFields()) {
+            if (field.getIdentifier().equals(fieldAccess.getFieldName())) {
+                TypeNode fieldType = field.getType();
+                // Resolve field type if necessary
+                if (fieldType instanceof TypeIdentifierNode) {
+                    String typeName = ((TypeIdentifierNode) fieldType).getTypeName();
+                    fieldType = typeTable.get(typeName);
+                    if (fieldType == null) {
+                        throw new RuntimeException("Undefined type: " + typeName);
+                    }
+                }
+                return fieldType;
+            }
+        }
+        throw new RuntimeException("Field '" + fieldAccess.getFieldName() + "' not found in record.");
+    } else {
+        throw new RuntimeException("Type Error: Attempting to access field of non-record type.");
+    }
+}
+
 
     private int getArrayTypeCode(TypeNode elementType) {
         if (elementType instanceof IntegerTypeNode || elementType instanceof BooleanTypeNode) {

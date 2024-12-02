@@ -1,0 +1,10 @@
+var x: integer is 5;
+if (x > 0 and x < 20) then
+  if (x < 10) then
+    x := 15;
+  end
+else
+  x := 20;
+end
+
+print x;

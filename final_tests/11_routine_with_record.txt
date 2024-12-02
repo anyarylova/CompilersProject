@@ -1,0 +1,18 @@
+var point: record is
+  var x: integer is 5;
+  var y: real is 2.5;
+  var z: integer is 10;
+end
+
+routine modifyPoint(p : record): record is
+  p.x := p.x + 10;
+  p.y := p.y - 1.5;
+  p.z := p.z * 2;
+  return p;
+end
+
+var result: record is modifyPoint(point);
+
+print result.x;
+print result.y;
+print result.z;

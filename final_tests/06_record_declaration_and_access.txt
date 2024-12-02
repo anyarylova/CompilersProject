@@ -1,0 +1,12 @@
+type
+    Person is record
+        var Name: string;
+        var Age: integer;
+    end;
+
+var individual: Person;
+individual.Name := "John Doe";
+individual.Age := 30;
+
+print individual;
+print individual.Name;

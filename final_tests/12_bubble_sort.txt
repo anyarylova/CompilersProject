@@ -1,0 +1,23 @@
+var arr : array [5] integer is [5, 2, 9, 1, 3];
+
+routine bubbleSort(a : array [5] integer): array [5] integer is
+  var temp : integer;
+  for i in [0 .. 4] loop
+    for j in [0 .. (4 - i)] loop
+      if (a[j] > a[j + 1]) then
+        temp := a[j];
+        a[j] := a[j + 1];
+        a[j + 1] := temp;
+      end
+    end
+  end
+  return a;
+end
+
+var result: array [5] integer is bubbleSort(arr);
+
+print arr[0];  // 1
+print arr[1];  // 2
+print arr[2];  // 3
+print arr[3];  // 5
+print arr[4];  // 9

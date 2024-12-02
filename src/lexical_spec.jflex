@@ -18,9 +18,11 @@ NUMBER      = {DIGIT}+
 REAL        = {DIGIT}+ "." {DIGIT}*
 WHITESPACE  = [ \t\n\r]+
 COMMENT     = "//" [^\n]*
+STRING_LITERAL = \"([^\"\n\r])*\" 
 
-/* Regular expression rules */
 %%
+/* Regular expression rules */
+{STRING_LITERAL}   { System.out.println("STRING_LITERAL: " + yytext()); return new Symbol(sym.STRING_LITERAL, yytext().substring(1, yytext().length()-1)); }
 
 /* Skip whitespaces */
 {WHITESPACE} { /* Ignore whitespaces */ }
@@ -49,6 +51,8 @@ COMMENT     = "//" [^\n]*
 "routine"    { System.out.println("ROUTINE"); return new Symbol(sym.ROUTINE); }
 "return"     { System.out.println("RETURN"); return new Symbol(sym.RETURN); }
 "print"      { System.out.println("PRINT"); return new Symbol(sym.PRINT); }
+"string"     { System.out.println("STRING_TYPE"); return new Symbol(sym.STRING_TYPE); }
+"type"       { System.out.println("TYPE"); return new Symbol(sym.TYPE); }
 
 /* Operators */
 "+"          { System.out.println("PLUS"); return new Symbol(sym.PLUS); }

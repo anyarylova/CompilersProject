@@ -1,4 +1,4 @@
-import java.util.List;
+import java.util.*;
 
 abstract class ASTNode {
     private ASTNode parent;
@@ -15,16 +15,27 @@ abstract class ASTNode {
 /* Program Node */
 class ProgramNode extends ASTNode {
     private List<ASTNode> children;
+    private List<TypeDeclarationNode> typeDeclarations;
 
     public ProgramNode(List<ASTNode> children) {
         this.children = children;
+        this.typeDeclarations = new ArrayList<>();
         for (ASTNode child : children) {
-            child.setParent(this);
+            if (child instanceof TypeDeclarationListNode) {
+                TypeDeclarationListNode tdListNode = (TypeDeclarationListNode) child;
+                typeDeclarations.addAll(tdListNode.getTypeDeclarations());
+            } else {
+                child.setParent(this);
+            }
         }
     }
 
     public List<ASTNode> getChildren() {
         return children;
+    }
+
+    public List<TypeDeclarationNode> getTypeDeclarations() {
+        return typeDeclarations;
     }
 
     public void setChildren(List<ASTNode> children) {
@@ -81,6 +92,9 @@ class BooleanTypeNode extends TypeNode { }
 
 class RealTypeNode extends TypeNode { }
 
+class StringTypeNode extends TypeNode { }
+
+
 class ArrayTypeNode extends TypeNode {
     private int size;
     private TypeNode elementType;
@@ -116,6 +130,56 @@ class RecordTypeNode extends TypeNode {
         return fields;
     }
 }
+
+class TypeIdentifierNode extends TypeNode {
+    private String typeName;
+
+    public TypeIdentifierNode(String typeName) {
+        this.typeName = typeName;
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+}
+
+class TypeDeclarationNode extends ASTNode {
+    private String identifier;
+    private TypeNode typeDefinition;
+
+    public TypeDeclarationNode(String identifier, TypeNode typeDefinition) {
+        this.identifier = identifier;
+        this.typeDefinition = typeDefinition;
+        if (typeDefinition != null) typeDefinition.setParent(this);
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public TypeNode getTypeDefinition() {
+        return typeDefinition;
+    }
+}
+
+class TypeDeclarationListNode extends ASTNode {
+    private List<TypeDeclarationNode> typeDeclarations;
+
+    public TypeDeclarationListNode(List<TypeDeclarationNode> typeDeclarations) {
+        this.typeDeclarations = typeDeclarations;
+        if (typeDeclarations != null) {
+            for (TypeDeclarationNode td : typeDeclarations) {
+                td.setParent(this);
+            }
+        }
+    }
+
+    public List<TypeDeclarationNode> getTypeDeclarations() {
+        return typeDeclarations;
+    }
+}
+
+
 
 /* Expression Nodes */
 abstract class ExpressionNode extends ASTNode { }
@@ -227,6 +291,19 @@ class UnaryOpNode extends ExpressionNode {
         return operator;
     }
 }
+
+class StringNode extends ExpressionNode {
+    private String value;
+
+    public StringNode(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}
+
 
 class ArrayAccessNode extends ExpressionNode {
     private ExpressionNode array;
