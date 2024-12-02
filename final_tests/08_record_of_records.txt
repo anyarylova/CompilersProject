@@ -1,27 +1,17 @@
-var milk : record is
-  var milkPrice: real is 79.99;
-  var milkDiscount: integer is 10;
-  var milkSale: boolean is true;
-end;
+type
+    Address is record
+        var City: string;
+        var ZipCode: integer;
+    end;
 
-var bread : record is
-  var breadPrice: real is 35.99;
-  var breadDiscount: integer is 15;
-  var breadSale: boolean is false;
-end;
+    Person is record
+        var Name: string;
+        var HomeAddress: Address;
+    end;
 
-var butter : record is
-  var butterPrice: real is 154.99;
-  var butterDiscount: integer is 5;
-  var butterSale: boolean is true;
-end;
+var individual: Person;
+individual.Name := "Jane Smith";
+individual.HomeAddress.City := "New York";
+individual.HomeAddress.ZipCode := 10001;
 
-var shop : record is 
-  var milkProduct: record is milk;
-  var breadProduct: record is bread;
-  var butterProduct: record is butter;
-end;
-
-print shop.milkProduct.milkPrice;
-print shop.breadProduct.breadDiscount;
-print shop.butterProduct.butterSale;
+print individual;

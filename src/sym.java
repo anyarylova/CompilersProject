@@ -7,7 +7,7 @@
 public class sym {
   /* terminals */
   public static final int DIVIDE = 24;
-  public static final int STRING_LITERAL = 47;
+  public static final int STRING_LITERAL = 50;
   public static final int REAL_TYPE = 5;
   public static final int LBRACKET = 37;
   public static final int XOR = 33;
@@ -24,7 +24,7 @@ public class sym {
   public static final int AND = 31;
   public static final int RANGE = 41;
   public static final int RECORD = 7;
-  public static final int TYPE = 48;
+  public static final int TYPE = 51;
   public static final int IN = 16;
   public static final int OR = 32;
   public static final int COMMA = 39;
@@ -38,7 +38,7 @@ public class sym {
   public static final int RETURN = 20;
   public static final int RBRACKET = 38;
   public static final int EQUAL = 26;
-  public static final int STRING_TYPE = 46;
+  public static final int STRING_TYPE = 49;
   public static final int TRUE = 8;
   public static final int error = 1;
   public static final int ROUTINE = 19;
@@ -116,7 +116,7 @@ public String[] TT;
 	public sym(){
 		TT = new String[100];
 		TT[24]=new String("DIVIDE");
-		TT[47]=new String("STRING_LITERAL");
+		TT[50]=new String("STRING_LITERAL");
 		TT[5]=new String("REAL_TYPE");
 		TT[37]=new String("LBRACKET");
 		TT[33]=new String("XOR");
@@ -133,7 +133,7 @@ public String[] TT;
 		TT[31]=new String("AND");
 		TT[41]=new String("RANGE");
 		TT[7]=new String("RECORD");
-		TT[48]=new String("TYPE");
+		TT[51]=new String("TYPE");
 		TT[16]=new String("IN");
 		TT[32]=new String("OR");
 		TT[39]=new String("COMMA");
@@ -147,7 +147,7 @@ public String[] TT;
 		TT[20]=new String("RETURN");
 		TT[38]=new String("RBRACKET");
 		TT[26]=new String("EQUAL");
-		TT[46]=new String("STRING_TYPE");
+		TT[49]=new String("STRING_TYPE");
 		TT[8]=new String("TRUE");
 		TT[1]=new String("error");
 		TT[19]=new String("ROUTINE");

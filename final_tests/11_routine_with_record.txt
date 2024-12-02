@@ -1,18 +1,15 @@
-var point: record is
-  var x: integer is 5;
-  var y: real is 2.5;
-  var z: integer is 10;
-end
+type
+    Person is record
+        var Name: string;
+        var Age: integer;
+    end;
 
-routine modifyPoint(p : record): record is
-  p.x := p.x + 10;
-  p.y := p.y - 1.5;
-  p.z := p.z * 2;
-  return p;
-end
+routine UpdateAge(person: Person, newAge: integer) is
+    person.Age := newAge;
+end;
 
-var result: record is modifyPoint(point);
+var Individual: Person;
+Individual.Name := "Alice";
+Individual.Age := 25;
 
-print result.x;
-print result.y;
-print result.z;
+print UpdateAge(Individual, 30);

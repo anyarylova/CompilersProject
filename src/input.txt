@@ -1,20 +1,7 @@
-type
-    Student is record
-        var Name: string;
-        var Age: integer;
-    end;
+routine add(a: integer, b: integer): integer is
+    return a + b;
+end
 
-var Students: array[3] Student;
+var result: integer is add(2, 3);
 
-Students[0].Name := "Alice";
-Students[0].Age := 20;
-
-Students[1].Name := "Bob";
-Students[1].Age := 22;
-
-Students[2].Name := "Charlie";
-Students[2].Age := 19;
-
-print Students[0];
-
-
+print result;
