@@ -1,4 +1,0 @@
-var x: boolean is false;
-x := 1;
-
-print x;

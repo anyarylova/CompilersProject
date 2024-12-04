@@ -1,2 +1,0 @@
-var x: integer is 6 / 2;
-x := 2.002;

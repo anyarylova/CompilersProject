@@ -1,8 +1,0 @@
-var rec : record is 
-    var x: integer;
-    var y: real;
-    var z: boolean;
-end;
-
-
-print rec;

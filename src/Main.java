@@ -24,12 +24,6 @@ public class Main {
                 // Print AST after optimization
                 System.out.println("AST after optimization:");
                 analyzer.printAST(ast, 0);
-
-                // Interpret code
-                System.out.println("Interpreting code...");
-                Interpreter interpreter = new Interpreter();
-                interpreter.interpret(ast);
-                
                 
                 // Generate code
                 System.out.println("Generating code...");

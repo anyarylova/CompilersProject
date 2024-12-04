@@ -16,7 +16,8 @@
 - Sofya Ivanova
 
 #### Code Run
-1. `jflex lexical_spec.jflex` generates lexer by the name **Yylex.java**
+
+1. `jflex lexical_spec.jflex` - generates lexer by the name **Yylex.java**
 2. `java java_cup.MainDrawTree parser.cup` - generates **parser.java** and **sym.java**
 3. `javac -classpath ".;asm-9.7.1.jar;asm-commons-9.7.1.jar;asm-tree-9.7.1.jar;$CLASSPATH" *.java
 ` - compiles the rest Java files (in **Git Bash**)
@@ -24,4 +25,5 @@
 5. `java MainClass` - runs the generated code 
 
 #### Final Presentation
+
 [Link to the presentation](https://docs.google.com/presentation/d/1KQFeQXbT8AWSHJyoHbnpT3SBuFhOKJWTfua25dOWhak/edit#slide=id.gcb9a0b074_1_0)
